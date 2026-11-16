@@ -4627,7 +4627,8 @@
 
             const text = '*' + db.settings.bizName + '*\n' +
                 'Bukti Pembayaran Internet WiFi\n' +
-                '--------------------------------\n' +
+                'Nota Elekteronik\n' +
+                '-------------------------------------------\n' +
                 'No. Struk : ' + tx.receiptNo + '\n' +
                 'Tanggal   : ' + formatDateIndo(tx.date) + '\n' +
                 'Pelanggan : ' + tx.customerName + '\n' +
@@ -4636,7 +4637,10 @@
                 'Nominal   : *' + formatRupiah(tx.amountPaid) + '* (' + tx.method + ')\n' +
                 'Sisa      : ' + formatRupiah(tx.remainingAfter) + '\n' +
                 'Status    : *' + tx.statusAfter + '*\n' +
-                '--------------------------------\n' +
+                '-------------------------------------------\n' +
+                'By. Admin\n' +
+                '-------------------------------------------\n' +
+                'Struk PDF terlampir di pesan ini.\n' +
                 db.settings.footerNote;
 
             const waUrl = phone
@@ -4649,7 +4653,8 @@
             const periodeText = tx.multiPeriodLabel || formatPeriodIndo(tx.period);
             return '*' + db.settings.bizName + '*\n' +
                 'Bukti Pembayaran Internet WiFi\n' +
-                '--------------------------------\n' +
+                'Nota Elekteronik\n' +
+                '-------------------------------------------\n' +
                 'No. Struk : ' + tx.receiptNo + '\n' +
                 'Tanggal   : ' + formatDateIndo(tx.date) + '\n' +
                 'Pelanggan : ' + tx.customerName + '\n' +
@@ -4658,7 +4663,9 @@
                 'Nominal   : *' + formatRupiah(tx.amountPaid) + '* (' + tx.method + ')\n' +
                 'Sisa      : ' + formatRupiah(tx.remainingAfter) + '\n' +
                 'Status    : *' + tx.statusAfter + '*\n' +
-                '--------------------------------\n' +
+                '-------------------------------------------\n' +
+                'By. Admin\n' +
+                '-------------------------------------------\n' +
                 'Struk PDF terlampir di pesan ini.\n' +
                 db.settings.footerNote;
         }
