@@ -4604,6 +4604,8 @@
             const sep = isRegular ? '-'.repeat(72) : '-'.repeat(currentReceiptWidth === '58mm' ? 32 : 44);
             doc.setFontSize(isRegular ? 14 : 11);
             center(db.settings.bizName.toUpperCase(), true);
+			doc.setFontSize(isRegular ? 7 : 5);
+			center('Support By : PT. Loveika Host Nusantara', true);
             doc.setFontSize(isRegular ? 10 : 8);
             wrapCenter(db.settings.bizAddress || '');
             center('WA/Telp: ' + (db.settings.bizPhone || '-'), false);
