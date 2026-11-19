@@ -4676,30 +4676,35 @@
         }
 
         function buildReceiptWhatsAppText(tx) {
-            const periodeText = tx.multiPeriodLabel || formatPeriodIndo(tx.period);
-            const footer = (db.settings.footerNote || 'Terima kasih atas pembayarannya.').trim();
-            const tanggal = formatDateIndo(tx.date) + (tx.time ? ' ' + tx.time : '');
-            return '*' + db.settings.bizName + '*\n' +
-                'Support By : PT. Loveika Host Nusantara\n' +
-                'Bukti Pembayaran Internet WiFi\n' +
-				'Nota Elektronik\n' +
-                '-------------------------------------------\n' +
-                'No. Struk : ' + tx.receiptNo + '\n' +
-                'Tanggal   : ' + tanggal + '\n' +
-                'Pelanggan : ' + tx.customerName + '\n' +
-				'Alamat    : ' + tx.customerAddress + '\n' +
-                'Periode   : ' + periodeText + '\n' +
-                'Paket     : ' + tx.packageName + '\n' +
-                'Nominal   : *' + formatRupiah(tx.amountPaid) + '* (' + tx.method + ')\n' +
-                'Sisa      : ' + formatRupiah(tx.remainingAfter) + '\n' +
-                'Status    : *' + tx.statusAfter + '*\n' +
-                '-------------------------------------------\n' +
-                'By. Admin\n' +
-                '-------------------------------------------\n' +
-                footer + '\n' +
-                'Struk PDF terlampir di pesan ini.';
-        }
+    const periodeText = tx.multiPeriodLabel || formatPeriodIndo(tx.period);
+    const footer = (db.settings.footerNote || 'Terima kasih atas pembayarannya.').trim();
+    const tanggal = formatDateIndo(tx.date) + (tx.time ? ' ' + tx.time : '');
+    
+    // Cari pelanggan di db.customers berdasarkan ID atau Nama untuk mengambil alamatnya
+    const cust = (db.customers || []).find(c => c.id === tx.customerId || c.name === tx.customerName);
+    const alamat = tx.customerAddress || (cust && cust.address) || '-';
 
+    return '*' + db.settings.bizName + '*\n' +
+        'Support By : PT. Loveika Host Nusantara\n' +
+        'Bukti Pembayaran Internet WiFi\n' +
+        'Nota Elektronik\n' +
+        '-------------------------------------------\n' +
+        'No. Struk : ' + tx.receiptNo + '\n' +
+        'Tanggal   : ' + tanggal + '\n' +
+        'Pelanggan : ' + tx.customerName + '\n' +
+        'Alamat    : ' + alamat + '\n' +
+        'Periode   : ' + periodeText + '\n' +
+        'Paket     : ' + tx.packageName + '\n' +
+        'Nominal   : *' + formatRupiah(tx.amountPaid) + '* (' + tx.method + ')\n' +
+        'Sisa      : ' + formatRupiah(tx.remainingAfter) + '\n' +
+        'Status    : *' + tx.statusAfter + '*\n' +
+        '-------------------------------------------\n' +
+        'By. Admin\n' +
+        '-------------------------------------------\n' +
+        footer + '\n' +
+        'Struk PDF terlampir di pesan ini.';
+}
+		
         async function sendReceiptWhatsAppCombined() {
             const tx = db.transactions.find(t => t.id === currentReceiptTxId);
             if (!tx) return;
