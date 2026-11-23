@@ -4808,13 +4808,13 @@
             if (!cust) return;
             const rem = Math.max(0, b.amount - b.paidAmount);
 
-            const msg = 'Halo *' + cust.name + '*,\n' +
+            const msg = 'Halo Yth. Bapak/Ibu pelanggan setia : *' + cust.name + '*,\n' +
                 'Kami dari *' + db.settings.bizName + '* menginformasikan tagihan internet WiFi Anda:\n\n' +
                 '• Periode: *' + formatPeriodIndo(b.period) + '*\n' +
                 '• Paket: ' + b.packageName + '\n' +
                 '• Status: ' + b.status + '\n' +
                 '• Sisa Tagihan: *' + formatRupiah(rem) + '*\n\n' +
-                'Mohon segera melakukan pembayaran agar layanan internet tetap lancar. Terima kasih.';
+                'Sekedar Mengingatkan !- Mohon segera melakukan pembayaran agar layanan internet tetap lancar. Terima kasih atas kerjasamanya.';
 
             const phone = formatPhoneForWA(cust.phone);
             window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
