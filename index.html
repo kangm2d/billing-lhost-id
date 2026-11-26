@@ -805,32 +805,28 @@
                     </div>
                 </section>
 
-                <!-- ==================== TAB 5B: BUKU KAS (DEBIT & KREDIT) ==================== -->
+           <!-- ==================== TAB 5B: BUKU KAS (DEBIT & KREDIT) ==================== -->
                 <section id="tab-bukukas" class="tab-content hidden space-y-6">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                         <div>
                             <h2 class="text-2xl font-bold text-slate-900">Buku Kas Keuangan (Debit & Kredit)</h2>
                             <p class="text-sm text-slate-500">Catatan arus kas pemasukan (iuran WiFi & pemasukan lain) serta pengeluaran operasional.</p>
                         </div>
-<div class="flex flex-wrap items-start gap-2">
-    <div class="flex flex-col gap-1.5">
-        <button onclick="openCashEntryModal('KREDIT')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 transition">
-            <i data-lucide="plus-circle" class="w-4 h-4"></i> Catat Kredit (Masuk)
-        </button>
-        <button onclick="openCashEntryModal('DEBIT')" class="bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 transition">
-            <i data-lucide="minus-circle" class="w-4 h-4"></i> Catat Debit (Keluar)
-        </button>
-    </div>
-    <div class="flex flex-col gap-1.5">
-        <button onclick="exportCashbookCSV()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 transition">
-            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export CSV
-        </button>
-        <button onclick="printCashbookPDF()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 transition">
-            <i data-lucide="printer" class="w-4 h-4"></i> Cetak PDF
-        </button>
-    </div>
-</div>
-
+                        <div class="flex flex-wrap items-center gap-2 shrink-0">
+                            <button onclick="openCashEntryModal('KREDIT')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 whitespace-nowrap transition">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i> Catat Kredit (Masuk)
+                            </button>
+                            <button onclick="openCashEntryModal('DEBIT')" class="bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 whitespace-nowrap transition">
+                                <i data-lucide="minus-circle" class="w-4 h-4"></i> Catat Debit (Keluar)
+                            </button>
+                            <button onclick="exportCashbookCSV()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 whitespace-nowrap transition">
+                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export CSV
+                            </button>
+                            <button onclick="printCashbookPDF()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 whitespace-nowrap transition">
+                                <i data-lucide="printer" class="w-4 h-4"></i> Cetak PDF
+                            </button>
+                        </div>
+                    </div>
                     <!-- Ringkasan Saldo Buku Kas -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
