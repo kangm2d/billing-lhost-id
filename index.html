@@ -5089,26 +5089,58 @@ function printCashbookPDF() {
             }).join('');
             lucide.createIcons();
         }
-
         function remindArrearsWA(billId) {
-            const b = db.bills.find(item => item.id === billId);
-            if (!b) return;
-            const cust = db.customers.find(c => c.id === b.customerId);
-            if (!cust) return;
-            const rem = Math.max(0, b.amount - b.paidAmount);
+    const b = db.bills.find(item => item.id === billId);
+    if (!b) return;
+    const cust = db.customers.find(c => c.id === b.customerId);
+    if (!cust) return;
 
-            const msg = 'Halo Yth. Bapak/Ibu pelanggan setia :*' + cust.name + '*,\n' +
-                'Kami dari *' + db.settings.bizName + '* menginformasikan tagihan internet WiFi Anda:\n\n' +
-                '• Periode: *' + formatPeriodIndo(b.period) + '*\n' +
-                '• Paket: ' + b.packageName + '\n' +
-                '• Status: ' + b.status + '\n' +
-                '• Sisa Tagihan: *' + formatRupiah(rem) + '*\n\n' +
-                'Sekedar Mengingatkan! Mohon segera melakukan pembayaran agar layanan internet tetap lancar. Terima kasih atas kerjasamanya.';
+    // Ambil semua tagihan belum lunas milik pelanggan ini (urut dari bulan terlama)
+    const unpaidBills = db.bills
+        .filter(item => item.customerId === cust.id && item.status !== 'LUNAS')
+        .sort((a, b) => a.period.localeCompare(b.period));
 
-            const phone = formatPhoneForWA(cust.phone);
-            window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
-        }
+    if (unpaidBills.length === 0) return;
 
+    // Hitung total keseluruhan tagihan
+    let totalRem = 0;
+    unpaidBills.forEach(item => {
+        totalRem += Math.max(0, item.amount - item.paidAmount);
+    });
+
+    // Susun format daftar Periode
+    let periodeText = '';
+    if (unpaidBills.length > 1) {
+        periodeText = unpaidBills.map((item, idx) => {
+            const prefix = idx === 0 ? '- ' : '                  - ';
+            return prefix + formatPeriodIndo(item.period);
+        }).join('\n');
+    } else {
+        periodeText = formatPeriodIndo(unpaidBills[0].period);
+    }
+
+    // Ambil data paket, status, dan nominal tagihan dari tagihan pertama
+    const firstBill = unpaidBills[0];
+    const singleRem = Math.max(0, firstBill.amount - firstBill.paidAmount);
+
+    // Susun pesan WA sesuai format persis yang Anda inginkan
+    let msg = 'Halo Yth. Bapak/Ibu pelanggan setia : *' + cust.name + '*,\n' +
+              'Kami dari *' + db.settings.bizName + '*,\n' +
+			  'Menginformasikan tagihan internet WiFi Anda:\n' +
+              '• Periode : ' + periodeText + '\n' +
+              '• Paket   : ' + firstBill.packageName + '\n' +
+              '• Status  : ' + firstBill.status + '\n' +
+              '• Tagihan : *' + formatRupiah(singleRem) + '*\n';
+
+    if (unpaidBills.length > 1) {
+        msg += '*Total Keseluruhan (' + unpaidBills.length + ' Bulan): ' + formatRupiah(totalRem) + '*\n';
+    }
+
+    msg += 'Sekedar Mengingatkan !- Mohon segera melakukan pembayaran agar layanan internet tetap lancar. Terima kasih atas kerjasamanya.';
+
+    const phone = formatPhoneForWA(cust.phone);
+    window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
+}
         function formatPhoneForWA(phone) {
             if (!phone) return '';
             let clean = phone.replace(/\D/g, '');
