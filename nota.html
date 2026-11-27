@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nota Elektronik - LHOST.WIFI.ID</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
         body {
-            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: #f0f2f5;
             margin: 0;
             padding: 20px 12px;
@@ -19,12 +17,12 @@
         }
         .struk {
             background: #ffffff;
-            padding: 28px 24px;
+            padding: 26px 22px;
             width: 100%;
-            max-width: 400px;
+            max-width: 410px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             border-radius: 6px;
-            font-size: 13.5px;
+            font-size: 14px;
             line-height: 1.45;
         }
         .header-title {
@@ -37,32 +35,22 @@
             font-size: 12.5px;
             margin-bottom: 14px;
         }
-        .bold {
-            font-weight: bold;
+        .bold { font-weight: bold; }
+        .mono-section {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 8px 0;
         }
         .dashed {
-            border-bottom: 1px dashed #444;
-            margin: 10px 0;
+            border-bottom: 1px dashed #333;
+            margin: 6px 0;
         }
-        .spacer {
-            height: 12px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        td {
-            vertical-align: top;
-            padding: 2px 0;
-        }
-        td:first-child {
-            width: 110px;
-        }
-        .tax-note {
-            font-size: 12px;
-            margin: 3px 0;
-            color: #333;
-        }
+        .spacer { height: 12px; }
+        table { width: 100%; border-collapse: collapse; }
+        td { vertical-align: top; padding: 1.5px 0; }
+        td:first-child { width: 112px; }
+        .tax-note { font-size: 12.5px; margin: 3px 0; }
         .btn-print {
             margin-top: 20px;
             width: 100%;
@@ -75,22 +63,10 @@
             font-size: 14px;
             font-weight: bold;
         }
-        .btn-print:hover {
-            background: #0052a3;
-        }
         @media print {
-            body {
-                background: #ffffff;
-                padding: 0;
-            }
-            .struk {
-                box-shadow: none;
-                max-width: 100%;
-                padding: 10px;
-            }
-            .btn-print {
-                display: none;
-            }
+            body { background: #ffffff; padding: 0; }
+            .struk { box-shadow: none; max-width: 100%; padding: 10px; }
+            .btn-print { display: none; }
         }
     </style>
 </head>
@@ -101,31 +77,35 @@
     <div class="header-sub" id="bizName">LHOST.WIFI.ID</div>
 
     <div>Yth. Bapak / Ibu :</div>
-    <div class="bold" id="nama" style="font-size: 14.5px;">-</div>
+    <div class="bold" id="nama" style="font-size: 15px;">-</div>
     <div id="alamat">-</div>
-    <div>Bukti Pembayaran Internet WiFi</div>
+
+    <div class="mono-section">
+        <div class="dashed"></div>
+        <div>Bukti Pembayaran Internet WiFi</div>
+        <div class="dashed"></div>
+
+        <table>
+            <tr><td>No. Struk</td><td>: <span id="noStruk">-</span></td></tr>
+            <tr><td>Tanggal</td><td>: <span id="tanggal">-</span></td></tr>
+            <tr><td>Periode</td><td>: <span id="periode">-</span></td></tr>
+            <tr><td>Jenis Paket</td><td>: <span id="paket">-</span></td></tr>
+            <tr><td>Harga Paket</td><td>: <span id="harga">-</span></td></tr>
+        </table>
+        <div class="tax-note">*Sudah Termasuk Pajak</div>
+        <table>
+            <tr><td>Total Bayar</td><td>: <span id="total">-</span></td></tr>
+            <tr><td>Sisa</td><td>: <span id="sisa">-</span></td></tr>
+            <tr><td>Status</td><td>: <span class="bold" id="status">-</span></td></tr>
+        </table>
+
+        <div class="dashed"></div>
+        <div>Admin By: <span id="admin">LHOST.WIFI.ID</span></div>
+        <div class="dashed"></div>
+    </div>
 
     <div class="spacer"></div>
-
-    <table>
-        <tr><td>No. Struk</td><td>: <span id="noStruk">-</span></td></tr>
-        <tr><td>Tanggal</td><td>: <span id="tanggal">-</span></td></tr>
-        <tr><td>Periode</td><td>: <span id="periode">-</span></td></tr>
-        <tr><td>Jenis Paket</td><td>: <span id="paket">-</span></td></tr>
-        <tr><td>Harga Paket</td><td>: <span id="harga">-</span></td></tr>
-    </table>
-    <div class="tax-note">*Sudah Termasuk Pajak</div>
-    <table>
-        <tr><td>Total Bayar</td><td>: <span id="total">-</span></td></tr>
-        <tr><td>Sisa</td><td>: <span id="sisa">-</span></td></tr>
-        <tr><td>Status</td><td>: <span class="bold" id="status">-</span></td></tr>
-    </table>
-
-    <div class="dashed"></div>
-    <div>Admin By: <span id="admin">LHOST.WIFI.ID</span></div>
-    <div class="dashed"></div>
-
-    <div class="spacer"></div>
+    <div>Struk PDF terlampir di pesan ini.</div>
     <div id="footer">Terima kasih atas pembayaran tepat waktu. Simpan struk ini sebagai bukti sah.</div>
     <div class="dashed"></div>
     <div>Support By : PT. Loveika Host Nusantara</div>
@@ -135,42 +115,21 @@
 
 <script>
     const p = new URLSearchParams(window.location.search);
-    const d = p.get('d');
+    const q = p.get('q');
+    const toRp = (angka) => 'Rp ' + Number(angka || 0).toLocaleString('id-ID');
 
-    if (d) {
-        // Membaca format link ringkas (?d=...)
-        try {
-            let b64 = d.replace(/-/g, '+').replace(/_/g, '/');
-            while (b64.length % 4) b64 += '=';
-            const decoded = decodeURIComponent(escape(atob(b64)));
-            const parts = decoded.split('|');
-
-            const ids = ['nama', 'alamat', 'noStruk', 'tanggal', 'periode', 'paket', 'harga', 'total', 'sisa', 'status'];
-            ids.forEach((id, idx) => {
-                if (parts[idx]) {
-                    document.getElementById(id).innerText = parts[idx];
-                }
-            });
-        } catch (e) {
-            console.error('Gagal membaca kode nota:', e);
-        }
-    } else {
-        // Cadangan: tetap membaca jika dibuka menggunakan format link lama (?nama=...&alamat=...)
-        const set = (id, key) => {
-            if (p.get(key)) document.getElementById(id).innerText = p.get(key);
-        };
-        set('nama', 'nama');
-        set('alamat', 'alamat');
-        set('noStruk', 'no');
-        set('tanggal', 'tgl');
-        set('periode', 'periode');
-        set('paket', 'paket');
-        set('harga', 'harga');
-        set('total', 'total');
-        set('sisa', 'sisa');
-        set('status', 'status');
-        set('admin', 'admin');
-        set('footer', 'footer');
+    if (q) {
+        const parts = q.split('~');
+        if (parts[0]) document.getElementById('nama').innerText = parts[0];
+        if (parts[1]) document.getElementById('alamat').innerText = parts[1];
+        if (parts[2]) document.getElementById('noStruk').innerText = parts[2].startsWith('INV-') ? parts[2] : 'INV-' + parts[2];
+        if (parts[3]) document.getElementById('tanggal').innerText = parts[3];
+        if (parts[4]) document.getElementById('periode').innerText = parts[4];
+        if (parts[5]) document.getElementById('paket').innerText = parts[5].toLowerCase().startsWith('paket') ? parts[5] : 'Paket ' + parts[5];
+        if (parts[6]) document.getElementById('harga').innerText = toRp(parts[6]);
+        if (parts[7]) document.getElementById('total').innerText = toRp(parts[7]) + (parts[8] ? ' (' + parts[8] + ')' : '');
+        if (parts[9]) document.getElementById('sisa').innerText = toRp(parts[9]);
+        if (parts[10]) document.getElementById('status').innerText = parts[10];
     }
 </script>
 
