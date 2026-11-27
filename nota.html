@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nota Elektronik - LHOST.WIFI.ID</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 12px;
+            display: flex;
+            justify-content: center;
+            color: #111;
+        }
+        .struk {
+            background: #ffffff;
+            padding: 28px 24px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-radius: 6px;
+            font-size: 13.5px;
+            line-height: 1.45;
+        }
+        .header-title {
+            font-weight: bold;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+        }
+        .header-sub {
+            color: #555;
+            font-size: 12.5px;
+            margin-bottom: 14px;
+        }
+        .bold {
+            font-weight: bold;
+        }
+        .dashed {
+            border-bottom: 1px dashed #444;
+            margin: 10px 0;
+        }
+        .spacer {
+            height: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        td {
+            vertical-align: top;
+            padding: 2px 0;
+        }
+        td:first-child {
+            width: 110px;
+        }
+        .tax-note {
+            font-size: 12px;
+            margin: 3px 0;
+            color: #333;
+        }
+        .btn-print {
+            margin-top: 20px;
+            width: 100%;
+            padding: 11px;
+            background: #0066cc;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .btn-print:hover {
+            background: #0052a3;
+        }
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+            .struk {
+                box-shadow: none;
+                max-width: 100%;
+                padding: 10px;
+            }
+            .btn-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="struk">
+    <div class="header-title">NOTA ELEKTRONIK</div>
+    <div class="header-sub" id="bizName">LHOST.WIFI.ID</div>
+
+    <div>Yth. Bapak / Ibu :</div>
+    <div class="bold" id="nama" style="font-size: 14.5px;">-</div>
+    <div id="alamat">-</div>
+    <div>Bukti Pembayaran Internet WiFi</div>
+
+    <div class="spacer"></div>
+
+    <table>
+        <tr><td>No. Struk</td><td>: <span id="noStruk">-</span></td></tr>
+        <tr><td>Tanggal</td><td>: <span id="tanggal">-</span></td></tr>
+        <tr><td>Periode</td><td>: <span id="periode">-</span></td></tr>
+        <tr><td>Jenis Paket</td><td>: <span id="paket">-</span></td></tr>
+        <tr><td>Harga Paket</td><td>: <span id="harga">-</span></td></tr>
+    </table>
+    <div class="tax-note">*Sudah Termasuk Pajak</div>
+    <table>
+        <tr><td>Total Bayar</td><td>: <span id="total">-</span></td></tr>
+        <tr><td>Sisa</td><td>: <span id="sisa">-</span></td></tr>
+        <tr><td>Status</td><td>: <span class="bold" id="status">-</span></td></tr>
+    </table>
+
+    <div class="dashed"></div>
+    <div>Admin By: <span id="admin">LHOST.WIFI.ID</span></div>
+    <div class="dashed"></div>
+
+    <div class="spacer"></div>
+    <div id="footer">Terima kasih atas pembayaran tepat waktu. Simpan struk ini sebagai bukti sah.</div>
+    <div class="dashed"></div>
+    <div>Support By : PT. Loveika Host Nusantara</div>
+
+    <button class="btn-print" onclick="window.print()">Cetak / Simpan PDF</button>
+</div>
+
+<script>
+    const p = new URLSearchParams(window.location.search);
+    const d = p.get('d');
+
+    if (d) {
+        // Membaca format link ringkas (?d=...)
+        try {
+            let b64 = d.replace(/-/g, '+').replace(/_/g, '/');
+            while (b64.length % 4) b64 += '=';
+            const decoded = decodeURIComponent(escape(atob(b64)));
+            const parts = decoded.split('|');
+
+            const ids = ['nama', 'alamat', 'noStruk', 'tanggal', 'periode', 'paket', 'harga', 'total', 'sisa', 'status'];
+            ids.forEach((id, idx) => {
+                if (parts[idx]) {
+                    document.getElementById(id).innerText = parts[idx];
+                }
+            });
+        } catch (e) {
+            console.error('Gagal membaca kode nota:', e);
+        }
+    } else {
+        // Cadangan: tetap membaca jika dibuka menggunakan format link lama (?nama=...&alamat=...)
+        const set = (id, key) => {
+            if (p.get(key)) document.getElementById(id).innerText = p.get(key);
+        };
+        set('nama', 'nama');
+        set('alamat', 'alamat');
+        set('noStruk', 'no');
+        set('tanggal', 'tgl');
+        set('periode', 'periode');
+        set('paket', 'paket');
+        set('harga', 'harga');
+        set('total', 'total');
+        set('sisa', 'sisa');
+        set('status', 'status');
+        set('admin', 'admin');
+        set('footer', 'footer');
+    }
+</script>
+
+</body>
+</html>
