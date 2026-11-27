@@ -4967,34 +4967,62 @@ function printCashbookPDF() {
 
         function buildReceiptWhatsAppText(tx) {
     const periodeText = tx.multiPeriodLabel || formatPeriodIndo(tx.period);
-    const footer = (db.settings.footerNote || 'Terima kasih atas pembayarannya.').trim();
+    const footer = (db.settings.footerNote || 'Terima kasih atas pembayaran tepat waktu. Simpan struk ini sebagai bukti sah.').trim();
     const tanggal = formatDateIndo(tx.date) + (tx.time ? ' ' + tx.time : '');
     
-    // Cari pelanggan di db.customers berdasarkan ID atau Nama untuk mengambil alamatnya
+    // Cari pelanggan untuk mengambil alamat & harga paket jika tidak ada di tx
     const cust = (db.customers || []).find(c => c.id === tx.customerId || c.name === tx.customerName);
     const alamat = tx.customerAddress || (cust && cust.address) || '-';
+    
+    // Mengambil harga satuan paket
+    const pkg = (db.packages || []).find(p => p.id === tx.packageId || p.name === tx.packageName);
+    const rawHarga = tx.packagePrice || tx.price || (pkg && pkg.price) || (cust && cust.price) || tx.amountPaid;
+    const hargaPaket = formatRupiah(rawHarga);
 
-    return '*' + db.settings.bizName + '*\n' +
-        'Support By : PT. Loveika Host Nusantara\n' +
+    // Membuat Link Nota otomatis mengarah ke file nota.html di GitHub Pages kamu
+    const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*\$/, '');
+    const params = new URLSearchParams({
+        nama: tx.customerName,
+        alamat: alamat,
+        no: tx.receiptNo,
+        tgl: tanggal,
+        periode: periodeText,
+        paket: tx.packageName,
+        harga: hargaPaket,
+        total: formatRupiah(tx.amountPaid) + ' (' + tx.method + ')',
+        sisa: formatRupiah(tx.remainingAfter),
+        status: tx.statusAfter,
+        admin: db.settings.bizName || 'LHOST.WIFI.ID',
+        footer: footer
+    });
+    const linkNota = `${baseUrl}/nota.html?${params.toString()}`;
+
+    // Susunan teks dengan monospace (```) agar titik dua sejajar lurus di WhatsApp
+    return 'NOTA ELEKTRONIK\n' +
+        linkNota + '\n\n' +
+        'Yth. Bapak / Ibu :\n' +
+        '*' + tx.customerName + '*\n' +
+        alamat + '\n' +
         'Bukti Pembayaran Internet WiFi\n' +
-        'Nota Elektronik\n' +
-        '-------------------------------------------\n' +
-        'No. Struk : ' + tx.receiptNo + '\n' +
-        'Tanggal   : ' + tanggal + '\n' +
-        'Pelanggan : ' + tx.customerName + '\n' +
-        'Alamat    : ' + alamat + '\n' +
-        'Periode   : ' + periodeText + '\n' +
-        'Paket     : ' + tx.packageName + '\n' +
-        'Nominal   : *' + formatRupiah(tx.amountPaid) + '* (' + tx.method + ')\n' +
-        'Sisa      : ' + formatRupiah(tx.remainingAfter) + '\n' +
-        'Status    : *' + tx.statusAfter + '*\n' +
-        '-------------------------------------------\n' +
-        'By. Admin\n' +
-        '-------------------------------------------\n' +
+        '```\n' +
+        'No. Struk   : ' + tx.receiptNo + '\n' +
+        'Tanggal     : ' + tanggal + '\n' +
+        'Periode     : ' + periodeText + '\n' +
+        'Jenis Paket : ' + tx.packageName + '\n' +
+        'Harga Paket : ' + hargaPaket + '\n' +
+        '*Sudah Termasuk Pajak\n' +
+        'Total Bayar : ' + formatRupiah(tx.amountPaid) + ' (' + tx.method + ')\n' +
+        'Sisa        : ' + formatRupiah(tx.remainingAfter) + '\n' +
+        'Status      : ' + tx.statusAfter + '\n' +
+        '------------------------------------\n' +
+        'Admin By: ' + (db.settings.bizName || 'LHOST.WIFI.ID') + '\n' +
+        '------------------------------------\n' +
+        '```\n' +
+        'Struk PDF terlampir di pesan ini.\n' +
         footer + '\n' +
-        'Struk PDF terlampir di pesan ini.';
+        '------------------------------------\n' +
+        'Support By : PT. Loveika Host Nusantara';
 }
-		
         async function sendReceiptWhatsAppCombined() {
             const tx = db.transactions.find(t => t.id === currentReceiptTxId);
             if (!tx) return;
