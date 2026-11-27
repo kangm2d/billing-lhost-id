@@ -4924,7 +4924,6 @@ function printCashbookPDF() {
             center('--- Terima kasih ---', false);
             return doc.output('blob');
         }
-
         function downloadReceiptPDF() {
             const tx = db.transactions.find(t => t.id === currentReceiptTxId);
             if (!tx) return;
@@ -4964,16 +4963,17 @@ function printCashbookPDF() {
     const rawHarga = tx.packagePrice || tx.price || (pkg && pkg.price) || (cust && cust.price) || tx.amountPaid;
     const hargaPaket = formatRupiah(rawHarga);
 
-    // 1. Bersihkan URL dasar & gunakan /nota tanpa .html
+    // 1. Bersihkan URL dasar
     const cleanPath = window.location.pathname.replace(/\/[^\/]*$/, '').replace(/\/+$/, '');
     const baseUrl = window.location.origin + cleanPath;
 
-    // 2. Kompresi data menjadi kode angka singkat
+    // 2. Kompresi data singkat (angka 0 langsung jadi '0', ribuan jadi angka tanpa nol)
     const keRibu = (val) => {
         const num = Number(String(val || 0).replace(/[^0-9]/g, ''));
+        if (num === 0) return '0';
         return num >= 1000 && num % 1000 === 0 ? String(num / 1000) : 'n' + num;
     };
-    const tglPendek = tanggal.replace(/[^0-9]/g, ''); // "14/11/2026 19:53" -> "141120261953"
+    const tglPendek = tanggal.replace(/[^0-9]/g, '');
     const metodePendek = tx.method === 'Tunai' ? 'T' : (tx.method === 'Transfer' ? 'B' : tx.method);
     const statusPendek = tx.statusAfter === 'LUNAS' ? '1' : '0';
 
@@ -4997,13 +4997,12 @@ function printCashbookPDF() {
 
     const linkNota = `${baseUrl}/nota?q=${encodedQuery}`;
 
-    // 3. Format Teks WhatsApp
+    // 3. Susunan teks WhatsApp dengan jarak yang lebih rapat
     return 'NOTA ELEKTRONIK\n' +
         linkNota + '\n\n' +
         'Yth. Bapak / Ibu :\n' +
         '*' + tx.customerName + '*\n' +
-        alamat + '\n' +
-        '```\n' +
+        alamat + '```\n' +
         '------------------------------------\n' +
         'Bukti Pembayaran Internet WiFi\n' +
         '------------------------------------\n' +
@@ -5018,8 +5017,7 @@ function printCashbookPDF() {
         'Status      : ' + tx.statusAfter + '\n' +
         '------------------------------------\n' +
         'Admin By: ' + (db.settings.bizName || 'LHOST.WIFI.ID') + '\n' +
-        '------------------------------------\n' +
-        '```\n' +
+        '------------------------------------```' +
         'Struk PDF terlampir di pesan ini.\n' +
         footer + '\n' +
         '------------------------------------\n' +
