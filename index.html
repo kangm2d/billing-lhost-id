@@ -5045,15 +5045,15 @@ function buildReceiptWhatsAppText(tx) {
         '-----------------------------\n' +
         'Bukti Pembayaran Internet WiFi\n' +
         '-----------------------------\n' +
-            'No. Struk   : ' + dataNota.noStruk + '\n' +
-            'Tanggal     : ' + dataNota.tanggal + '\n' +
-            'Periode     : ' + dataNota.periode + '\n' +
-            'Jenis Paket : ' + dataNota.paket + '\n' +
-            'Harga Paket : ' + dataNota.harga + '\n' +
-            'Catatan     : *Sudah Termasuk Pajak*\n' +
-            'Total Bayar : ' + dataNota.total + '\n' +
-            'Sisa        : ' + dataNota.sisa + '\n' +
-            'Status      : ' + dataNota.status + '\n' +
+        'No. Struk   : ' + tx.receiptNo + '\n' +
+        'Tanggal     : ' + tanggal + '\n' +
+        'Periode     : ' + periodeText + '\n' +
+        'Jenis Paket : ' + tx.packageName + '\n' +
+        'Harga Paket : ' + hargaPaket + '\n' +
+        'Catatan     : *Sudah Termasuk Pajak*\n' +
+        'Total Bayar : ' + formatRupiah(tx.amountPaid) + ' (' + tx.method + ')\n' +
+        'Sisa        : ' + formatRupiah(tx.remainingAfter) + '\n' +
+        'Status      : ' + tx.statusAfter + '\n' +
         '-----------------------------\n' +
         'Admin By: ' + (db.settings.bizName || 'LHOST.WIFI.ID') + '\n' +
         '-----------------------------\n' +
