@@ -4964,47 +4964,52 @@ function printCashbookPDF() {
                 : 'https://wa.me/?text=' + encodeURIComponent(text);
             window.open(waUrl, '_blank');
         }
-
         function buildReceiptWhatsAppText(tx) {
     const periodeText = tx.multiPeriodLabel || formatPeriodIndo(tx.period);
     const footer = (db.settings.footerNote || 'Terima kasih atas pembayaran tepat waktu. Simpan struk ini sebagai bukti sah.').trim();
     const tanggal = formatDateIndo(tx.date) + (tx.time ? ' ' + tx.time : '');
     
-    // Cari pelanggan untuk mengambil alamat & harga paket jika tidak ada di tx
     const cust = (db.customers || []).find(c => c.id === tx.customerId || c.name === tx.customerName);
     const alamat = tx.customerAddress || (cust && cust.address) || '-';
     
-    // Mengambil harga satuan paket
     const pkg = (db.packages || []).find(p => p.id === tx.packageId || p.name === tx.packageName);
     const rawHarga = tx.packagePrice || tx.price || (pkg && pkg.price) || (cust && cust.price) || tx.amountPaid;
     const hargaPaket = formatRupiah(rawHarga);
 
-    // Membuat Link Nota otomatis mengarah ke file nota.html di GitHub Pages kamu
-    const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*\$/, '');
-    const params = new URLSearchParams({
-        nama: tx.customerName,
-        alamat: alamat,
-        no: tx.receiptNo,
-        tgl: tanggal,
-        periode: periodeText,
-        paket: tx.packageName,
-        harga: hargaPaket,
-        total: formatRupiah(tx.amountPaid) + ' (' + tx.method + ')',
-        sisa: formatRupiah(tx.remainingAfter),
-        status: tx.statusAfter,
-        admin: db.settings.bizName || 'LHOST.WIFI.ID',
-        footer: footer
-    });
-    const linkNota = `${baseUrl}/nota.html?${params.toString()}`;
+    // 1. Memperbaiki URL agar tidak ada garis miring ganda (//nota.html)
+    const cleanPath = window.location.pathname.replace(/\/[^\/]*$/, '').replace(/\/+$/, '');
+    const baseUrl = window.location.origin + cleanPath;
 
-    // Susunan teks dengan monospace (```) agar titik dua sejajar lurus di WhatsApp
+    // 2. Menggabungkan data penting saja menjadi 1 parameter singkat (tanpa teks footer/admin)
+    const dataRingkas = [
+        tx.customerName,
+        alamat,
+        tx.receiptNo,
+        tanggal,
+        periodeText,
+        tx.packageName,
+        hargaPaket,
+        formatRupiah(tx.amountPaid) + ' (' + tx.method + ')',
+        formatRupiah(tx.remainingAfter),
+        tx.statusAfter
+    ].join('|');
+
+    // Mengubah ke format ringkas yang aman untuk URL
+    const kodeUrl = btoa(unescape(encodeURIComponent(dataRingkas)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        
+    const linkNota = `${baseUrl}/nota.html?d=${kodeUrl}`;
+
+    // 3. Format Teks WhatsApp
     return 'NOTA ELEKTRONIK\n' +
         linkNota + '\n\n' +
         'Yth. Bapak / Ibu :\n' +
         '*' + tx.customerName + '*\n' +
         alamat + '\n' +
+		'``\n' +
+		'------------------------------------\n' +
         'Bukti Pembayaran Internet WiFi\n' +
-        '```\n' +
+        '------------------------------------\n' +
         'No. Struk   : ' + tx.receiptNo + '\n' +
         'Tanggal     : ' + tanggal + '\n' +
         'Periode     : ' + periodeText + '\n' +
