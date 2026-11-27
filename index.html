@@ -4880,64 +4880,79 @@ function printCashbookPDF() {
             }
         }
         function buildReceiptTextPDFBlob(tx) {
-            const JSPDF = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : null;
-            if (!JSPDF) return null;
-            const isRegular = currentReceiptWidth === 'regular';
-            const pageW = isRegular ? 210 : (currentReceiptWidth === '58mm' ? 58 : 80);
-            const margin = isRegular ? 15 : 3;
-            const usable = pageW - margin * 2;
-            const doc = new JSPDF({ unit: 'mm', format: isRegular ? 'a4' : [pageW, 300], orientation: 'portrait' });
-            const periodeText = tx.multiPeriodLabel || formatPeriodIndo(tx.period);
-            let y = isRegular ? 15 : 5;
-            const lineH = isRegular ? 6 : 4.2;
-            const center = (txt, bold) => { doc.setFont('courier', bold ? 'bold' : 'normal'); doc.text(txt, pageW / 2, y, { align: 'center' }); y += lineH; };
-            const row = (label, value) => { doc.setFont('courier', 'normal'); doc.text(label, margin, y); doc.text(String(value), pageW - margin, y, { align: 'right' }); y += lineH; };
-            const wrapCenter = (txt) => { doc.setFont('courier', 'normal'); const lines = doc.splitTextToSize(txt || '', usable); lines.forEach(l => { doc.text(l, pageW / 2, y, { align: 'center' }); y += lineH; }); };
-            const sep = isRegular ? '-'.repeat(72) : '-'.repeat(currentReceiptWidth === '58mm' ? 32 : 44);
-            doc.setFontSize(isRegular ? 14 : 11);
-            center(db.settings.bizName.toUpperCase(), true);
-			doc.setFontSize(isRegular ? 7 : 5);
-			center('Support By : PT. Loveika Host Nusantara', true);
-            doc.setFontSize(isRegular ? 8 : 6);
-            wrapCenter(db.settings.bizAddress || '');
-            center('WA/Telp: ' + (db.settings.bizPhone || '-'), false);
-            doc.setFontSize(isRegular ? 10 : 8);
-            center(isRegular ? 'KWITANSI PEMBAYARAN' : 'BUKTI PEMBAYARAN', true);
-            center(sep, false);
-            row('No. Struk:', tx.receiptNo);
-            row('Tanggal:', formatDateIndo(tx.date) + ' ' + (tx.time || ''));
-            row('Pelanggan:', tx.customerName);
-            row('Alamat:', tx.customerAddress);
-            center(sep, false);
-            doc.setFont('courier', 'bold'); doc.text('Tagihan ' + periodeText, margin, y); y += lineH;
-            doc.setFont('courier', 'normal');
-            doc.splitTextToSize(tx.packageName || '', usable).forEach(l => { doc.text(l, margin, y); y += lineH; });
-            if (tx.note) { doc.splitTextToSize('Cat: ' + tx.note, usable).forEach(l => { doc.text(l, margin, y); y += lineH; }); }
-            row('Total Tagihan', formatRupiah(tx.billTotal));
-			row('***Sudah Termasuk Pajak', '');
-            doc.setFont('courier', 'bold'); row('DIBAYAR (' + tx.method + ')', formatRupiah(tx.amountPaid)); doc.setFont('courier', 'normal');
-            row('Sisa Tagihan', formatRupiah(tx.remainingAfter));
-            center(sep, false);
-            doc.setFontSize(isRegular ? 12 : 10);
-            center('STATUS: ' + tx.statusAfter, true);
-            doc.setFontSize(isRegular ? 10 : 8);
-            center(sep, false);
-            wrapCenter(db.settings.footerNote || 'Terima kasih atas pembayarannya.');
-            y += lineH;
-            center('--- Terima kasih ---', false);
-            return doc.output('blob');
-        }
-        function downloadReceiptPDF() {
-            const tx = db.transactions.find(t => t.id === currentReceiptTxId);
-            if (!tx) return;
-            const blob = buildReceiptTextPDFBlob(tx);
-            if (!blob) { showToast('jsPDF gagal dimuat, cek koneksi internet.', 'error'); return; }
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'Struk_' + tx.receiptNo + '.pdf'; a.click();
-            setTimeout(() => URL.revokeObjectURL(url), 5000);
-            showToast('File PDF struk (teks) berhasil diunduh!', 'success');
-        }
+    const JSPDF = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : null;
+    if (!JSPDF) return null;
+    const isRegular = currentReceiptWidth === 'regular';
+    const pageW = isRegular ? 210 : (currentReceiptWidth === '58mm' ? 58 : 80);
+    const margin = isRegular ? 15 : 3;
+    const usable = pageW - margin * 2;
+    const doc = new JSPDF({ unit: 'mm', format: isRegular ? 'a4' : [pageW, 300], orientation: 'portrait' });
+    const periodeText = tx.multiPeriodLabel || formatPeriodIndo(tx.period);
+    let y = isRegular ? 15 : 5;
+    const lineH = isRegular ? 6 : 4.2;
+    const center = (txt, bold) => { doc.setFont('courier', bold ? 'bold' : 'normal'); doc.text(txt, pageW / 2, y, { align: 'center' }); y += lineH; };
+    const row = (label, value) => { doc.setFont('courier', 'normal'); doc.text(label, margin, y); doc.text(String(value), pageW - margin, y, { align: 'right' }); y += lineH; };
+    const wrapCenter = (txt) => { doc.setFont('courier', 'normal'); const lines = doc.splitTextToSize(txt || '', usable); lines.forEach(l => { doc.text(l, pageW / 2, y, { align: 'center' }); y += lineH; }); };
+    const sep = isRegular ? '-'.repeat(72) : '-'.repeat(currentReceiptWidth === '58mm' ? 32 : 44);
+    
+    doc.setFontSize(isRegular ? 14 : 11);
+    center(db.settings.bizName.toUpperCase(), true);
+    doc.setFontSize(isRegular ? 7 : 5);
+    center('Support By : PT. Loveika Host Nusantara', true);
+    doc.setFontSize(isRegular ? 8 : 6);
+    wrapCenter(db.settings.bizAddress || '');
+    center('WA/Telp: ' + (db.settings.bizPhone || '-'), false);
+    doc.setFontSize(isRegular ? 10 : 8);
+    center(isRegular ? 'KWITANSI PEMBAYARAN' : 'BUKTI PEMBAYARAN', true);
+    center(sep, false);
+    
+    row('No. Struk:', tx.receiptNo);
+    row('Tanggal:', formatDateIndo(tx.date) + ' ' + (tx.time || ''));
+    row('Pelanggan:', tx.customerName);
+    row('Alamat:', tx.customerAddress);
+    center(sep, false);
+    
+    doc.setFont('courier', 'bold'); doc.text('Tagihan ' + periodeText, margin, y); y += lineH;
+    doc.setFont('courier', 'normal');
+    doc.splitTextToSize(tx.packageName || '', usable).forEach(l => { doc.text(l, margin, y); y += lineH; });
+    if (tx.note) { doc.splitTextToSize('Cat: ' + tx.note, usable).forEach(l => { doc.text(l, margin, y); y += lineH; }); }
+    
+    // Kedua baris ini memakai fungsi row(), sehingga ukuran, jenis huruf, dan ketebalannya sama persis
+    row('Total Tagihan', formatRupiah(tx.billTotal));
+    row('Sudah Termasuk Pajak', '');
 
+    // Catatan: Fungsi row() selalu mereset font ke 'normal', jadi jika DIBAYAR ingin tebal, harus ditulis manual seperti ini:
+    doc.setFont('courier', 'bold');
+    doc.text('DIBAYAR (' + tx.method + ')', margin, y);
+    doc.text(formatRupiah(tx.amountPaid), pageW - margin, y, { align: 'right' });
+    y += lineH;
+    doc.setFont('courier', 'normal');
+
+    row('Sisa Tagihan', formatRupiah(tx.remainingAfter));
+    center(sep, false);
+    
+    doc.setFontSize(isRegular ? 12 : 10);
+    center('STATUS: ' + tx.statusAfter, true);
+    doc.setFontSize(isRegular ? 10 : 8);
+    center(sep, false);
+    
+    wrapCenter(db.settings.footerNote || 'Terima kasih atas pembayarannya.');
+    y += lineH;
+    center('--- Terima kasih ---', false);
+    
+    return doc.output('blob');
+}
+
+function downloadReceiptPDF() {
+    const tx = db.transactions.find(t => t.id === currentReceiptTxId);
+    if (!tx) return;
+    const blob = buildReceiptTextPDFBlob(tx);
+    if (!blob) { showToast('jsPDF gagal dimuat, cek koneksi internet.', 'error'); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'Struk_' + tx.receiptNo + '.pdf'; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    showToast('File PDF struk (teks) berhasil diunduh!', 'success');
+}
         function buildReceiptWhatsAppText(tx) {
     const periodeText = tx.multiPeriodLabel || formatPeriodIndo(tx.period);
     const footer = (db.settings.footerNote || 'Terima kasih atas pembayaran tepat waktu. Simpan struk ini sebagai bukti sah.').trim();
