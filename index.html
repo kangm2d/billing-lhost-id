@@ -5724,7 +5724,83 @@ function downloadReceiptPDF() {
 
         // Jalankan Aplikasi saat halaman selesai dimuat
         window.addEventListener('DOMContentLoaded', initApp);
-    </script>
+    
+/* ============================================================
+   TAMBAHAN AUTO LINK PENDEK - TANPA MERUBAH FUNGSI LAMA
+   buildReceiptWhatsAppText & sendReceiptWhatsAppCombined
+   TIDAK DIRUBAH SAMA SEKALI. Hanya cegat window.open.
+   Cara kerja: saat tombol WA diklik, link nota panjang di
+   dalam URL wa.me ditukar jadi link pendek dulu (is.gd /
+   tinyurl), baru WA dibuka. Tiap transaksi = pendek beda.
+   Kalau shortener gagal / timeout 2.5 detik, WA tetap
+   dibuka pakai link panjang biar tidak gagal kirim.
+   ============================================================ */
+(function(){
+  if (window.__lhostShortPatchInstalled) return;
+  window.__lhostShortPatchInstalled = true;
+  const _openAsli = window.open.bind(window);
+  const _cachePendek = new Map();
+
+  async function perpendek(linkPanjang){
+    if (_cachePendek.has(linkPanjang)) return _cachePendek.get(linkPanjang);
+    let pendek = linkPanjang;
+    try{
+      const r1 = await fetch('https://is.gd/create.php?format=simple&url=' + encodeURIComponent(linkPanjang));
+      const t1 = (await r1.text()).trim();
+      if (t1.startsWith('http') && t1.length < linkPanjang.length) pendek = t1;
+    }catch(e){}
+    if (pendek === linkPanjang){
+      try{
+        const r2 = await fetch('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(linkPanjang));
+        const t2 = (await r2.text()).trim();
+        if (t2.startsWith('http') && t2.length < linkPanjang.length) pendek = t2;
+      }catch(e){}
+    }
+    _cachePendek.set(linkPanjang, pendek);
+    return pendek;
+  }
+
+  // Pemanasan: begitu struk dibuka, siapkan pendeknya di background
+  // supaya klik WA terasa lebih cepat. Tidak merubah tampilan.
+  document.addEventListener('click', function(){
+    try{
+      if (typeof currentReceiptTxId === 'undefined' || !currentReceiptTxId) return;
+      if (typeof buildReceiptWhatsAppText !== 'function') return;
+      const tx = (window.db && db.transactions || []).find(function(x){ return x.id === currentReceiptTxId; });
+      if (!tx) return;
+      const teks = buildReceiptWhatsAppText(tx);
+      const m = teks.match(/https?:\/\/[^\s\n]+nota\?q=[^\s\n]+/);
+      if (m) perpendek(m[0]);
+    }catch(e){}
+  }, true);
+
+  window.open = function(url, target, features){
+    try{
+      if (typeof url === 'string' && url.indexOf('wa.me') !== -1 && url.indexOf('nota') !== -1){
+        // Ambil text= dari wa.me, decode, cari link nota panjang
+        const u = new URL(url);
+        const textEncoded = u.searchParams.get('text') || '';
+        let teks = '';
+        try{ teks = decodeURIComponent(textEncoded); }catch(e){ teks = textEncoded; }
+        const m = teks.match(/https?:\/\/[^\s\n]+nota\?q=[^\s\n]+/);
+        if (m){
+          const linkPanjang = m[0];
+          // Jangan buka dulu, tukar jadi pendek dulu (max 2.5 detik)
+          const timeout = new Promise(function(res){ setTimeout(function(){ res(linkPanjang); }, 2500); });
+          Promise.race([perpendek(linkPanjang), timeout]).then(function(linkPendek){
+            const teksBaru = teks.replace(linkPanjang, linkPendek);
+            const waBaru = 'https://wa.me/' + (u.pathname.replace(/^\//,'') || '') + '?text=' + encodeURIComponent(teksBaru);
+            _openAsli(waBaru, target || '_blank');
+          });
+          return null; // WA akan dibuka setelah pendek jadi
+        }
+      }
+    }catch(e){}
+    return _openAsli(url, target, features);
+  };
+})();
+
+</script>
 	<!-- MODAL PENGINGAT BELUM BAYAR TANGGAL 25 -->
 <div id="modal-reminder-25" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[88vh]">
