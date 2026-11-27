@@ -4935,22 +4935,6 @@ function printCashbookPDF() {
             showToast('File PDF struk (teks) berhasil diunduh!', 'success');
         }
 
-        function downloadAndSendReceiptPDF() {
-            const tx = db.transactions.find(t => t.id === currentReceiptTxId);
-            if (!tx) return;
-            const cust = db.customers.find(c => c.id === tx.customerId);
-            const phone = cust ? formatPhoneForWA(cust.phone) : '';
-            
-            downloadReceiptPDF();
-
-            setTimeout(() => {
-                const text = buildReceiptWhatsAppText(tx);
-                const waUrl = phone
-                    ? 'https://wa.me/' + phone + '?text=' + encodeURIComponent(text)
-                    : 'https://wa.me/?text=' + encodeURIComponent(text);
-                window.open(waUrl, '_blank');
-            }, 1200);
-        }
         function buildReceiptWhatsAppText(tx) {
     const periodeText = tx.multiPeriodLabel || formatPeriodIndo(tx.period);
     const footer = (db.settings.footerNote || 'Terima kasih atas pembayaran tepat waktu. Simpan struk ini sebagai bukti sah.').trim();
@@ -4963,17 +4947,16 @@ function printCashbookPDF() {
     const rawHarga = tx.packagePrice || tx.price || (pkg && pkg.price) || (cust && cust.price) || tx.amountPaid;
     const hargaPaket = formatRupiah(rawHarga);
 
-    // 1. Bersihkan URL dasar
+    // 1. Bersihkan URL dasar & gunakan /nota tanpa .html
     const cleanPath = window.location.pathname.replace(/\/[^\/]*$/, '').replace(/\/+$/, '');
     const baseUrl = window.location.origin + cleanPath;
 
-    // 2. Kompresi data singkat (angka 0 langsung jadi '0', ribuan jadi angka tanpa nol)
+    // 2. Kompresi data menjadi kode angka singkat
     const keRibu = (val) => {
         const num = Number(String(val || 0).replace(/[^0-9]/g, ''));
-        if (num === 0) return '0';
         return num >= 1000 && num % 1000 === 0 ? String(num / 1000) : 'n' + num;
     };
-    const tglPendek = tanggal.replace(/[^0-9]/g, '');
+    const tglPendek = tanggal.replace(/[^0-9]/g, ''); // "14/11/2026 19:53" -> "141120261953"
     const metodePendek = tx.method === 'Tunai' ? 'T' : (tx.method === 'Transfer' ? 'B' : tx.method);
     const statusPendek = tx.statusAfter === 'LUNAS' ? '1' : '0';
 
@@ -4997,12 +4980,12 @@ function printCashbookPDF() {
 
     const linkNota = `${baseUrl}/nota?q=${encodedQuery}`;
 
-    // 3. Susunan teks WhatsApp dengan jarak yang lebih rapat
+    // 3. Format Teks WhatsApp
     return 'NOTA ELEKTRONIK\n' +
         linkNota + '\n\n' +
         'Yth. Bapak / Ibu :\n' +
         '*' + tx.customerName + '*\n' +
-        alamat + '```\n' +
+        alamat + '\n' +
         '------------------------------------\n' +
         'Bukti Pembayaran Internet WiFi\n' +
         '------------------------------------\n' +
@@ -5011,15 +4994,15 @@ function printCashbookPDF() {
         'Periode     : ' + periodeText + '\n' +
         'Jenis Paket : ' + tx.packageName + '\n' +
         'Harga Paket : ' + hargaPaket + '\n' +
-        '*****Sudah Termasuk Pajak\n' +
+        '*Sudah Termasuk Pajak\n' +
         'Total Bayar : ' + formatRupiah(tx.amountPaid) + ' (' + tx.method + ')\n' +
         'Sisa        : ' + formatRupiah(tx.remainingAfter) + '\n' +
         'Status      : ' + tx.statusAfter + '\n' +
         '------------------------------------\n' +
         'Admin By: ' + (db.settings.bizName || 'LHOST.WIFI.ID') + '\n' +
         '------------------------------------\n' +
+        'Struk/Link PDF terlampir di pesan ini.\n' +
         footer + '\n' +
-		'Link/Struk PDF terlampir di pesan ini.\n' +
         '------------------------------------\n' +
         'Support By : PT. Loveika Host Nusantara';
 }
