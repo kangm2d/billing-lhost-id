@@ -4718,168 +4718,134 @@ function printCashbookPDF() {
             renderReceiptHTML();
         }
         function renderReceiptHTML() {
-            const tx = db.transactions.find(t => t.id === currentReceiptTxId);
-            if (!tx) return;
+    const tx = db.transactions.find(t => t.id === currentReceiptTxId);
+    if (!tx) return;
 
-            const periodeText = tx.multiPeriodLabel || formatPeriodIndo(tx.period);
+    const periodeText = tx.multiPeriodLabel || formatPeriodIndo(tx.period);
 
-            if (currentReceiptWidth === 'regular') {
-    const regHtml =
-        '<div id="receipt-paper" class="receipt-regular bg-white text-slate-900 p-6 shadow-md border border-slate-300 rounded-xl w-full max-w-xl mx-auto text-xs sm:text-sm">' +
-            '<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b-2 border-slate-800 pb-4 mb-4">' +
-                '<div class="flex items-start gap-3">' +
-                    '<img src="' + LOGO_URL + '" alt="Logo" style="width:56px;height:56px;object-fit:cover;border-radius:12px;border:1px solid #e2e8f0;">' +
+    // Ambil harga paket per bulan (sama seperti logika struk WhatsApp & PDF)
+    const cust = (db.customers || []).find(c => c.id === tx.customerId || c.name === tx.customerName);
+    const pkg = (db.packages || []).find(p => p.id === tx.packageId || p.name === tx.packageName);
+    const rawHarga = tx.packagePrice || tx.price || (pkg && pkg.price) || (cust && cust.price) || tx.amountPaid;
+    const hargaPaket = formatRupiah(rawHarga);
+    const alamat = tx.customerAddress || (cust && cust.address) || '-';
+
+    if (currentReceiptWidth === 'regular') {
+        const regHtml =
+            '<div id="receipt-paper" class="receipt-regular bg-white text-slate-900 p-6 shadow-md border border-slate-300 rounded-xl w-full max-w-xl mx-auto text-xs sm:text-sm">' +
+                '<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b-2 border-slate-800 pb-4 mb-4">' +
+                    '<div class="flex items-start gap-3">' +
+                        '<img src="' + LOGO_URL + '" alt="Logo" style="width:56px;height:56px;object-fit:cover;border-radius:12px;border:1px solid #e2e8f0;">' +
+                        '<div>' +
+                            '<h4 class="font-extrabold text-base sm:text-lg uppercase tracking-tight text-slate-900">' + db.settings.bizName + '</h4>' +
+                            '<p class="text-[10px] font-semibold text-blue-700">Support By : PT. Loveika Host Nusantara</p>' +
+                            '<p class="text-xs text-slate-600 mt-0.5">' + db.settings.bizAddress + '</p>' +
+                            '<p class="text-xs text-slate-600">Telp / WhatsApp: ' + db.settings.bizPhone + '</p>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="sm:text-right">' +
+                        '<span class="inline-block px-3 py-1 bg-slate-900 text-white font-bold text-xs uppercase tracking-wider rounded-md">KWITANSI PEMBAYARAN</span>' +
+                        '<p class="font-mono font-bold text-xs text-slate-800 mt-1.5">No: ' + tx.receiptNo + '</p>' +
+                        '<p class="text-xs text-slate-500">Tanggal: ' + formatDateIndo(tx.date) + ' ' + (tx.time || '') + '</p>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-lg border border-slate-200 mb-4 text-xs">' +
                     '<div>' +
-                    '<h4 class="font-extrabold text-base sm:text-lg uppercase tracking-tight text-slate-900">' + db.settings.bizName + '</h4>' +
-                    '<p class="text-[10px] font-semibold text-blue-700">Support By : PT. Loveika Host Nusantara</p>' +
-                    '<p class="text-xs text-slate-600 mt-0.5">' + db.settings.bizAddress + '</p>' +
-                    '<p class="text-xs text-slate-600">Telp / WhatsApp: ' + db.settings.bizPhone + '</p>' +
-                '</div>' +
-                '</div>' +
-                '<div class="sm:text-right">' +
-                    '<span class="inline-block px-3 py-1 bg-slate-900 text-white font-bold text-xs uppercase tracking-wider rounded-md">KWITANSI PEMBAYARAN</span>' +
-                    '<p class="font-mono font-bold text-xs text-slate-800 mt-1.5">No: ' + tx.receiptNo + '</p>' +
-                    '<p class="text-xs text-slate-500">Tanggal: ' + formatDateIndo(tx.date) + ' ' + (tx.time || '') + '</p>' +
-                '</div>' +
-            '</div>' +
-            '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-lg border border-slate-200 mb-4 text-xs">' +
-                '<div>' +
-                    '<span class="text-slate-500 block">Diterima Dari Pelanggan:</span>' +
-                    '<span class="font-bold text-sm text-slate-900">' + tx.customerName + '</span>' +
-                    '<span class="text-slate-600 block">' + tx.customerAddress + '</span>' +
-                '</div>' +
-                '<div class="sm:text-right">' +
-                    '<span class="text-slate-500 block">Metode & Status Pembayaran:</span>' +
-                    '<span class="font-bold text-slate-800">' + tx.method + '</span> &bull; ' +
-                    '<span class="font-extrabold uppercase ' + (tx.statusAfter === 'LUNAS' ? 'text-emerald-700' : 'text-amber-700') + '">' + tx.statusAfter + '</span>' +
-                '</div>' +
-            '</div>' +
-            '<table class="w-full text-left border-collapse border border-slate-300 text-xs mb-4">' +
-                '<thead>' +
-                    '<tr class="bg-slate-100 border-b border-slate-300 font-bold text-slate-700">' +
-                        '<th class="py-2 px-3 border-r border-slate-300">Keterangan Layanan</th>' +
-                        '<th class="py-2 px-3 border-r border-slate-300">Periode</th>' +
-                        '<th class="py-2 px-3 text-right">Jumlah</th>' +
-                    '</tr>' +
-                '</thead>' +
-                '<tbody>' +
-                    '<tr class="border-b border-slate-300">' +
-                        '<td class="py-2.5 px-3 border-r border-slate-300 font-medium">' + tx.packageName + (tx.note ? '<div class="text-[11px] text-slate-500 italic mt-0.5">Catatan: ' + tx.note + '</div>' : '') + '</td>' +
-                        '<td class="py-2.5 px-3 border-r border-slate-300 font-semibold">' + periodeText + '</td>' +
-                        '<td class="py-2.5 px-3 text-right font-semibold">' + formatRupiah(tx.billTotal) + '</td>' +
-                    '</tr>' +
-                '</tbody>' +
-                '<tfoot>' +
-                    '<tr class="border-b border-slate-200">' +
-                        '<td colspan="3" class="py-1.5 px-3 text-left text-[11px] text-slate-600 font-normal">*Sudah Termasuk Pajak</td>' +
-                    '</tr>' +
-                    '<tr class="bg-slate-50 font-bold">' +
-                        '<td colspan="2" class="py-2 px-3 border-r border-slate-300 text-right">NOMINAL DIBAYAR:</td>' +
-                        '<td class="py-2 px-3 text-right text-sm font-extrabold text-slate-900">' + formatRupiah(tx.amountPaid) + '</td>' +
-                    '</tr>' +
-                    '<tr>' +
-                        '<td colspan="2" class="py-1.5 px-3 border-r border-slate-300 text-right text-slate-600">Sisa Tagihan:</td>' +
-                        '<td class="py-1.5 px-3 text-right font-semibold text-slate-700">' + formatRupiah(tx.remainingAfter) + '</td>' +
-                    '</tr>' +
-                '</tfoot>' +
-            '</table>' +
-            '<div class="flex items-end justify-between gap-4 pt-2 text-xs">' +
-                '<div class="max-w-xs text-[11px] text-slate-600 leading-relaxed">' +
-                    '<p class="font-semibold text-slate-800 mb-0.5">Keterangan:</p>' +
-                    '<p>' + (db.settings.footerNote || 'Terima kasih atas pembayarannya.') + '</p>' +
-                '</div>' +
-                '<div class="text-center min-w-[130px]">' +
-                    '<p class="text-[11px] text-slate-600 mb-10">Petugas / Kasir,</p>' +
-                    '<p class="font-bold text-slate-900 border-t border-slate-400 pt-1">' + db.settings.bizName + '</p>' +
-                '</div>' +
-            '</div>' +
-        '</div>';
-                document.getElementById('receipt-preview-wrapper').innerHTML = regHtml;
-                return;
-            }
-
-            const is58 = currentReceiptWidth === '58mm';
-            const widthClass = is58 ? 'receipt-58mm w-[58mm] text-[11px]' : 'receipt-80mm w-[80mm] text-xs';
-
-            const html =
-                '<div id="receipt-paper" class="font-mono-receipt bg-white text-slate-900 p-4 shadow-md border border-slate-300 mx-auto ' + widthClass + '">' +
-                    '<div class="text-center border-b border-dashed border-slate-400 pb-2 mb-2">' +
-                        '<img src="' + LOGO_URL + '" alt="Logo" style="width:64px;height:64px;object-fit:cover;border-radius:12px;display:block;margin:0 auto 4px;">' +
-                        '<p class="font-bold uppercase tracking-tight text-sm">' + db.settings.bizName + '</p>' +
-                        '<p class="text-[9px] font-semibold text-slate-600">Support By : PT. Loveika Host Nusantara</p>' +
-                        '<p class="text-[10px] leading-snug mt-0.5">' + db.settings.bizAddress + '</p>' +
-                        '<p class="text-[10px]">WA/Telp: ' + db.settings.bizPhone + '</p>' +
+                        '<span class="text-slate-500 block">Diterima Dari Pelanggan:</span>' +
+                        '<span class="font-bold text-sm text-slate-900">' + tx.customerName + '</span>' +
+                        '<span class="text-slate-600 block">' + alamat + '</span>' +
                     '</div>' +
-                    '<div class="space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2 text-[10px]">' +
-                        '<div class="flex justify-between"><span>No. Struk:</span><span class="font-bold">' + tx.receiptNo + '</span></div>' +
-                        '<div class="flex justify-between"><span>Tanggal  :</span><span>' + formatDateIndo(tx.date) + ' ' + (tx.time || '') + '</span></div>' +
-                        '<div class="flex justify-between"><span>Pelanggan:</span><span class="font-bold text-right">' + tx.customerName + '</span></div>' +
-                        '<div class="flex justify-between"><span>Alamat   :</span><span class="text-right">' + tx.customerAddress + '</span></div>' +
+                    '<div class="sm:text-right">' +
+                        '<span class="text-slate-500 block">Metode & Status Pembayaran:</span>' +
+                        '<span class="font-bold text-slate-800">' + tx.method + '</span> &bull; ' +
+                        '<span class="font-extrabold uppercase ' + (tx.statusAfter === 'LUNAS' ? 'text-emerald-700' : 'text-amber-700') + '">' + tx.statusAfter + '</span>' +
                     '</div>' +
-                    '<div class="space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2">' +
-                        '<p class="font-bold">Tagihan ' + periodeText + '</p>' +
-                        '<p class="text-[10px]">' + tx.packageName + '</p>' +
-                        '<div class="flex justify-between pt-1"><span>Total Tagihan</span><span>' + formatRupiah(tx.billTotal) + '</span></div>' +
-				        '<p class="text-[10px]">***Sudah Termasuk Pajak</p>' +
-                        '<div class="flex justify-between font-bold text-sm"><span>DIBAYAR (' + tx.method + ')</span><span>' + formatRupiah(tx.amountPaid) + '</span></div>' +
-                        '<div class="flex justify-between"><span>Sisa Tagihan</span><span>' + formatRupiah(tx.remainingAfter) + '</span></div>' +
-                    '</div>' +
-                    '<div class="text-center border-b border-dashed border-slate-400 pb-2 mb-2">' +
-                        '<span class="inline-block border border-slate-900 px-2.5 py-0.5 font-bold tracking-widest uppercase">STATUS: ' + tx.statusAfter + '</span>' +
-                        (tx.note ? '<p class="text-[10px] mt-1 italic">Cat: ' + tx.note + '</p>' : '') +
-                    '</div>' +
-                    '<div class="text-center text-[10px] leading-snug">' +
+                '</div>' +
+                '<table class="w-full text-left border-collapse border border-slate-300 text-xs mb-4">' +
+                    '<thead>' +
+                        '<tr class="bg-slate-100 border-b border-slate-300 font-bold text-slate-700">' +
+                            '<th class="py-2 px-3 border-r border-slate-300">Keterangan Layanan</th>' +
+                            '<th class="py-2 px-3 border-r border-slate-300">Periode</th>' +
+                            '<th class="py-2 px-3 border-r border-slate-300 text-right">Harga/Bln</th>' +
+                            '<th class="py-2 px-3 text-right">Total Tagihan</th>' +
+                        '</tr>' +
+                    '</thead>' +
+                    '<tbody>' +
+                        '<tr class="border-b border-slate-300">' +
+                            '<td class="py-2.5 px-3 border-r border-slate-300 font-medium">' + tx.packageName + (tx.note ? '<div class="text-[11px] text-slate-500 italic mt-0.5">Catatan: ' + tx.note + '</div>' : '') + '</td>' +
+                            '<td class="py-2.5 px-3 border-r border-slate-300 font-semibold">' + periodeText + '</td>' +
+                            '<td class="py-2.5 px-3 border-r border-slate-300 text-right">' + hargaPaket + '</td>' +
+                            '<td class="py-2.5 px-3 text-right font-semibold">' + formatRupiah(tx.billTotal) + '</td>' +
+                        '</tr>' +
+                    '</tbody>' +
+                    '<tfoot>' +
+                        '<tr class="border-b border-slate-200">' +
+                            '<td colspan="4" class="py-1.5 px-3 text-left text-[11px] text-slate-600 font-normal">Catatan : <span class="italic">*Sudah Termasuk Pajak*</span></td>' +
+                        '</tr>' +
+                        '<tr class="bg-slate-50 font-bold">' +
+                            '<td colspan="3" class="py-2 px-3 border-r border-slate-300 text-right">NOMINAL DIBAYAR:</td>' +
+                            '<td class="py-2 px-3 text-right text-sm font-extrabold text-slate-900">' + formatRupiah(tx.amountPaid) + '</td>' +
+                        '</tr>' +
+                        '<tr>' +
+                            '<td colspan="3" class="py-1.5 px-3 border-r border-slate-300 text-right text-slate-600">Sisa Tagihan:</td>' +
+                            '<td class="py-1.5 px-3 text-right font-semibold text-slate-700">' + formatRupiah(tx.remainingAfter) + '</td>' +
+                        '</tr>' +
+                    '</tfoot>' +
+                '</table>' +
+                '<div class="flex items-end justify-between gap-4 pt-2 text-xs">' +
+                    '<div class="max-w-xs text-[11px] text-slate-600 leading-relaxed">' +
+                        '<p class="font-semibold text-slate-800 mb-0.5">Keterangan:</p>' +
                         '<p>' + (db.settings.footerNote || 'Terima kasih atas pembayarannya.') + '</p>' +
+                    '</div>' +
+                    '<div class="text-center min-w-[130px]">' +
+                        '<p class="text-[11px] text-slate-600 mb-10">Petugas / Kasir,</p>' +
+                        '<p class="font-bold text-slate-900 border-t border-slate-400 pt-1">' + db.settings.bizName + '</p>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        document.getElementById('receipt-preview-wrapper').innerHTML = regHtml;
+        return;
+    }
+
+    const is58 = currentReceiptWidth === '58mm';
+    const widthClass = is58 ? 'receipt-58mm w-[58mm] text-[11px]' : 'receipt-80mm w-[80mm] text-xs';
+
+    const html =
+        '<div id="receipt-paper" class="font-mono-receipt bg-white text-slate-900 p-4 shadow-md border border-slate-300 mx-auto ' + widthClass + '">' +
+            '<div class="text-center border-b border-dashed border-slate-400 pb-2 mb-2">' +
+                '<img src="' + LOGO_URL + '" alt="Logo" style="width:64px;height:64px;object-fit:cover;border-radius:12px;display:block;margin:0 auto 4px;">' +
+                '<p class="font-bold uppercase tracking-tight text-sm">' + db.settings.bizName + '</p>' +
+                '<p class="text-[9px] font-semibold text-slate-600">Support By : PT. Loveika Host Nusantara</p>' +
+                '<p class="text-[10px] leading-snug mt-0.5">' + db.settings.bizAddress + '</p>' +
+                '<p class="text-[10px]">WA/Telp: ' + db.settings.bizPhone + '</p>' +
+            '</div>' +
+            '<div class="space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2 text-[10px]">' +
+                '<div class="flex justify-between"><span>No. Struk:</span><span class="font-bold">' + tx.receiptNo + '</span></div>' +
+                '<div class="flex justify-between"><span>Tanggal  :</span><span>' + formatDateIndo(tx.date) + ' ' + (tx.time || '') + '</span></div>' +
+                '<div class="flex justify-between"><span>Pelanggan:</span><span class="font-bold text-right">' + tx.customerName + '</span></div>' +
+                '<div class="flex justify-between"><span>Alamat   :</span><span class="text-right">' + alamat + '</span></div>' +
+            '</div>' +
+            '<div class="space-y-1 border-b border-dashed border-slate-400 pb-2 mb-2 text-[10px]">' +
+                '<p class="font-bold text-[11px]">Tagihan ' + periodeText + '</p>' +
+                '<p>' + tx.packageName + '</p>' +
+                (tx.note ? '<p class="italic text-slate-600">Cat: ' + tx.note + '</p>' : '') +
+                '<div class="flex justify-between pt-1"><span>Harga Paket</span><span>' + hargaPaket + '</span></div>' +
+                '<div class="flex justify-between"><span>Catatan</span><span>*Sudah Termasuk Pajak*</span></div>' +
+                '<div class="flex justify-between"><span>Total Tagihan</span><span>' + formatRupiah(tx.billTotal) + '</span></div>' +
+                '<div class="flex justify-between font-bold text-[11px] pt-1"><span>DIBAYAR (' + tx.method + ')</span><span>' + formatRupiah(tx.amountPaid) + '</span></div>' +
+                '<div class="flex justify-between"><span>Sisa Tagihan</span><span>' + formatRupiah(tx.remainingAfter) + '</span></div>' +
+            '</div>' +
+            '<div class="text-center border-b border-dashed border-slate-400 pb-2 mb-2">' +
+                '<p class="font-bold text-xs">STATUS: ' + tx.statusAfter + '</p>' +
+            '</div>' +
+            '<div class="text-center text-[10px] space-y-1">' +
+                '<p>' + (db.settings.footerNote || 'Terima kasih atas pembayarannya.') + '</p>' +
                     '</div>' +
                 '</div>';
 
             document.getElementById('receipt-preview-wrapper').innerHTML = html;
         }
 
-        function triggerThermalPrint() {
-            const receiptContent = document.getElementById('receipt-preview-wrapper').innerHTML;
-            const printArea = document.getElementById('print-area');
-            printArea.innerHTML = receiptContent;
-            setTimeout(() => {
-                window.print();
-            }, 100);
-        }
-
-        window.addEventListener('afterprint', () => {
-            const printArea = document.getElementById('print-area');
-            if (printArea) printArea.innerHTML = '';
-        });
-
-        // ===== PDF STRUK VERSI TEKS (bukan gambar) =====
-        // Semua isi ditulis dengan doc.text() -> teks di PDF bisa di-copy, di-search, dan file lebih kecil.
-        // Tombol 2: Share Sheet - PDF + teks terkirim barengan, TAPI WA minta pilih/cari kontak sekali
-        // karena Share Sheet tidak membawa nomor tujuan. Ini satu-satunya cara PDF ikut otomatis dari web.
-        async function sendReceiptWhatsAppShare() {
-            const tx = db.transactions.find(t => t.id === currentReceiptTxId);
-            if (!tx) return;
-            const btn = document.getElementById('btn-send-wa-share');
-            const oldHtml = btn ? btn.innerHTML : '';
-            if (btn) { btn.disabled = true; btn.innerHTML = 'Membuat Link Pendek...'; }
-            let text = await tukarLinkNotaJadiPendek(buildReceiptWhatsAppText(tx));
-            if (btn) { btn.innerHTML = 'Menyiapkan PDF...'; }
-            try {
-                const fileName = 'Struk_' + tx.receiptNo + '.pdf';
-                const blob = buildReceiptTextPDFBlob(tx);
-                if (!blob) throw new Error('jsPDF tidak tersedia');
-                const file = new File([blob], fileName, { type: 'application/pdf' });
-                if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    await navigator.share({ title: 'Struk ' + tx.receiptNo, text: text, files: [file] });
-                    showToast('Struk (Teks + PDF) dibagikan - pilih WhatsApp lalu pilih kontak pelanggan.', 'success');
-                    return;
-                }
-                showToast('HP ini tidak mendukung Share file. Pakai tombol Langsung ke Nomor saja.', 'info');
-            } catch (err) {
-                if (err && err.name === 'AbortError') { showToast('Pengiriman dibatalkan.', 'info'); return; }
-                showToast('Gagal share. Pakai tombol Langsung ke Nomor saja.', 'info');
-            } finally {
-                if (btn) { btn.disabled = false; btn.innerHTML = oldHtml; lucide.createIcons(); }
-            }
-        }
         function buildReceiptTextPDFBlob(tx) {
     const JSPDF = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : null;
     if (!JSPDF) return null;
@@ -4896,6 +4862,11 @@ function printCashbookPDF() {
     const wrapCenter = (txt) => { doc.setFont('courier', 'normal'); const lines = doc.splitTextToSize(txt || '', usable); lines.forEach(l => { doc.text(l, pageW / 2, y, { align: 'center' }); y += lineH; }); };
     const sep = isRegular ? '-'.repeat(72) : '-'.repeat(currentReceiptWidth === '58mm' ? 32 : 44);
     
+    // Ambil harga paket per bulan (sama seperti logika struk WhatsApp)
+    const cust = (db.customers || []).find(c => c.id === tx.customerId || c.name === tx.customerName);
+    const pkg = (db.packages || []).find(p => p.id === tx.packageId || p.name === tx.packageName);
+    const rawHarga = tx.packagePrice || tx.price || (pkg && pkg.price) || (cust && cust.price) || tx.amountPaid;
+
     doc.setFontSize(isRegular ? 14 : 11);
     center(db.settings.bizName.toUpperCase(), true);
     doc.setFontSize(isRegular ? 7 : 5);
@@ -4910,7 +4881,7 @@ function printCashbookPDF() {
     row('No. Struk:', tx.receiptNo);
     row('Tanggal:', formatDateIndo(tx.date) + ' ' + (tx.time || ''));
     row('Pelanggan:', tx.customerName);
-    row('Alamat:', tx.customerAddress);
+    row('Alamat:', tx.customerAddress || (cust && cust.address) || '-');
     center(sep, false);
     
     doc.setFont('courier', 'bold'); doc.text('Tagihan ' + periodeText, margin, y); y += lineH;
@@ -4918,11 +4889,12 @@ function printCashbookPDF() {
     doc.splitTextToSize(tx.packageName || '', usable).forEach(l => { doc.text(l, margin, y); y += lineH; });
     if (tx.note) { doc.splitTextToSize('Cat: ' + tx.note, usable).forEach(l => { doc.text(l, margin, y); y += lineH; }); }
     
-    // Kedua baris ini memakai fungsi row(), sehingga ukuran, jenis huruf, dan ketebalannya sama persis
+    // Rincian harga paket per bulan, catatan pajak, dan total tagihan
+    row('Harga Paket', formatRupiah(rawHarga));
+    row('Catatan', '*Sudah Termasuk Pajak*');
     row('Total Tagihan', formatRupiah(tx.billTotal));
-    row('Sudah Termasuk Pajak', '');
 
-    // Catatan: Fungsi row() selalu mereset font ke 'normal', jadi jika DIBAYAR ingin tebal, harus ditulis manual seperti ini:
+    // Baris DIBAYAR dicetak tebal
     doc.setFont('courier', 'bold');
     doc.text('DIBAYAR (' + tx.method + ')', margin, y);
     doc.text(formatRupiah(tx.amountPaid), pageW - margin, y, { align: 'right' });
@@ -4966,9 +4938,9 @@ async function fetchTimeout(url, opts, ms){
 async function perpendekLinkNota(linkPanjang){
   if (_cacheLinkPendek.has(linkPanjang)) return _cacheLinkPendek.get(linkPanjang);
   let out = linkPanjang;
-  try{ const r = await fetchTimeout('https://api.shrtco.de/v2/shorten?url=' + encodeURIComponent(linkPanjang), null, 2500); const j = await r.json(); const s = j && j.result && j.result.full_short_link; if(s && s.startsWith('http') && s.length < linkPanjang.length) out = s; }catch(e){}
-  if(out === linkPanjang){ try{ const r = await fetchTimeout('https://cleanuri.com/api/v1/shorten', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'url=' + encodeURIComponent(linkPanjang)}, 2500); const j = await r.json(); const s = j && j.result_url; if(s && s.startsWith('http') && s.length < linkPanjang.length) out = s; }catch(e){} }
-  if(out === linkPanjang){ try{ const r = await fetchTimeout('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://is.gd/create.php?format=simple&url=' + encodeURIComponent(linkPanjang)), null, 2500); const s = (await r.text()).trim(); if(s.startsWith('http') && s.length < linkPanjang.length) out = s; }catch(e){} }
+  try{ const r = await fetchTimeout('https://shrtco.de' + encodeURIComponent(linkPanjang), null, 2500); const j = await r.json(); const s = j && j.result && j.result.full_short_link; if(s && s.startsWith('http') && s.length < linkPanjang.length) out = s; }catch(e){}
+  if(out === linkPanjang){ try{ const r = await fetchTimeout('https://cleanuri.com', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'url=' + encodeURIComponent(linkPanjang)}, 2500); const j = await r.json(); const s = j && j.result_url; if(s && s.startsWith('http') && s.length < linkPanjang.length) out = s; }catch(e){} }
+  if(out === linkPanjang){ try{ const r = await fetchTimeout('https://allorigins.win' + encodeURIComponent('https://is.gd' + encodeURIComponent(linkPanjang)), null, 2500); const s = (await r.text()).trim(); if(s.startsWith('http') && s.length < linkPanjang.length) out = s; }catch(e){} }
   _cacheLinkPendek.set(linkPanjang, out);
   return out;
 }
@@ -4978,10 +4950,10 @@ async function tukarLinkNotaJadiPendek(textPanjang){
     if(!m) return textPanjang;
     // Total max 4 detik, lewat dari itu pakai link panjang biar tidak nyangkut, tidak perlu klik 2x
     const pendek = await Promise.race([
-      perpendekLinkNota(m[0]),
-      new Promise(function(res){ setTimeout(function(){ res(m[0]); }, 4000); })
+      perpendekLinkNota(m),
+      new Promise(function(res){ setTimeout(function(){ res(m); }, 4000); })
     ]);
-    return textPanjang.split(m[0]).join(pendek);
+    return textPanjang.split(m).join(pendek);
   }catch(e){ return textPanjang; }
 }
 function buildReceiptWhatsAppText(tx) {
@@ -5045,7 +5017,7 @@ function buildReceiptWhatsAppText(tx) {
         'Periode     : ' + periodeText + '\n' +
         'Jenis Paket : ' + tx.packageName + '\n' +
         'Harga Paket : ' + hargaPaket + '\n' +
-        '*Sudah Termasuk Pajak\n' +
+        'Catatan     : *Sudah Termasuk Pajak*\n' +
         'Total Bayar : ' + formatRupiah(tx.amountPaid) + ' (' + tx.method + ')\n' +
         'Sisa        : ' + formatRupiah(tx.remainingAfter) + '\n' +
         'Status      : ' + tx.statusAfter + '\n' +
