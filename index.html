@@ -5000,13 +5000,12 @@ function printCashbookPDF() {
         
     const linkNota = `${baseUrl}/nota.html?d=${kodeUrl}`;
 
-    // 3. Format Teks WhatsApp
+   // 3. Format Teks WhatsApp Susunan teks dengan monospace (```) agar titik dua sejajar lurus di WhatsApp
     return 'NOTA ELEKTRONIK\n' +
         linkNota + '\n\n' +
         'Yth. Bapak / Ibu :\n' +
         '*' + tx.customerName + '*\n' +
         alamat + '\n' +
-		'``\n' +
 		'------------------------------------\n' +
         'Bukti Pembayaran Internet WiFi\n' +
         '------------------------------------\n' +
