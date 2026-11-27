@@ -4947,16 +4947,17 @@ function printCashbookPDF() {
     const rawHarga = tx.packagePrice || tx.price || (pkg && pkg.price) || (cust && cust.price) || tx.amountPaid;
     const hargaPaket = formatRupiah(rawHarga);
 
-    // 1. Bersihkan URL dasar & gunakan /nota tanpa .html
-    const cleanPath = window.location.pathname.replace(/\/[^\/]*$/, '').replace(/\/+$/, '');
+    // 1. Bersihkan URL dasar
+    const cleanPath = window.location.pathname.replace(/\/[^\/]*\(/, '').replace(/\/+\)/, '');
     const baseUrl = window.location.origin + cleanPath;
 
-    // 2. Kompresi data menjadi kode angka singkat
+    // 2. Kompresi data singkat
     const keRibu = (val) => {
         const num = Number(String(val || 0).replace(/[^0-9]/g, ''));
+        if (num === 0) return '0';
         return num >= 1000 && num % 1000 === 0 ? String(num / 1000) : 'n' + num;
     };
-    const tglPendek = tanggal.replace(/[^0-9]/g, ''); // "14/11/2026 19:53" -> "141120261953"
+    const tglPendek = tanggal.replace(/[^0-9]/g, '');
     const metodePendek = tx.method === 'Tunai' ? 'T' : (tx.method === 'Transfer' ? 'B' : tx.method);
     const statusPendek = tx.statusAfter === 'LUNAS' ? '1' : '0';
 
@@ -4980,12 +4981,13 @@ function printCashbookPDF() {
 
     const linkNota = `${baseUrl}/nota?q=${encodedQuery}`;
 
-    // 3. Format Teks WhatsApp
+    // 3. Format Teks WhatsApp: ``` ditaruh di baris sendiri agar titik dua rata lurus
     return 'NOTA ELEKTRONIK\n' +
-        linkNota + '\n\n' +
+        linkNota + '\n' +
         'Yth. Bapak / Ibu :\n' +
         '*' + tx.customerName + '*\n' +
         alamat + '\n' +
+        '```\n' +
         '------------------------------------\n' +
         'Bukti Pembayaran Internet WiFi\n' +
         '------------------------------------\n' +
@@ -5001,6 +5003,7 @@ function printCashbookPDF() {
         '------------------------------------\n' +
         'Admin By: ' + (db.settings.bizName || 'LHOST.WIFI.ID') + '\n' +
         '------------------------------------\n' +
+        '```\n' +
         'Struk/Link PDF terlampir di pesan ini.\n' +
         footer + '\n' +
         '------------------------------------\n' +
