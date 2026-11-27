@@ -116,22 +116,40 @@
 <script>
     const p = new URLSearchParams(window.location.search);
     const q = p.get('q');
-    const toRp = (angka) => 'Rp ' + Number(angka || 0).toLocaleString('id-ID');
+
+    const dariRibu = (val) => {
+        if (!val) return 'Rp 0';
+        const angka = val.startsWith('n') ? Number(val.slice(1)) : Number(val) * 1000;
+        return 'Rp ' + (angka || 0).toLocaleString('id-ID');
+    };
+
+    const formatTgl = (str) => {
+        if (!str || str.includes('/')) return str || '-';
+        if (str.length >= 8) {
+            const tgl = `${str.slice(0,2)}/${str.slice(2,4)}/${str.slice(4,8)}`;
+            const jam = str.length >= 12 ? ` ${str.slice(8,10)}:${str.slice(10,12)}` : '';
+            return tgl + jam;
+        }
+        return str;
+    };
 
     if (q) {
         const parts = q.split('~');
         if (parts[0]) document.getElementById('nama').innerText = parts[0];
         if (parts[1]) document.getElementById('alamat').innerText = parts[1];
         if (parts[2]) document.getElementById('noStruk').innerText = parts[2].startsWith('INV-') ? parts[2] : 'INV-' + parts[2];
-        if (parts[3]) document.getElementById('tanggal').innerText = parts[3];
+        if (parts[3]) document.getElementById('tanggal').innerText = formatTgl(parts[3]);
         if (parts[4]) document.getElementById('periode').innerText = parts[4];
         if (parts[5]) document.getElementById('paket').innerText = parts[5].toLowerCase().startsWith('paket') ? parts[5] : 'Paket ' + parts[5];
-        if (parts[6]) document.getElementById('harga').innerText = toRp(parts[6]);
-        if (parts[7]) document.getElementById('total').innerText = toRp(parts[7]) + (parts[8] ? ' (' + parts[8] + ')' : '');
-        if (parts[9]) document.getElementById('sisa').innerText = toRp(parts[9]);
-        if (parts[10]) document.getElementById('status').innerText = parts[10];
+        if (parts[6]) document.getElementById('harga').innerText = dariRibu(parts[6]);
+        
+        const metode = parts[8] === 'T' ? 'Tunai' : (parts[8] === 'B' ? 'Transfer' : (parts[8] || ''));
+        if (parts[7]) document.getElementById('total').innerText = dariRibu(parts[7]) + (metode ? ' (' + metode + ')' : '');
+        if (parts[9]) document.getElementById('sisa').innerText = dariRibu(parts[9]);
+        if (parts[10]) document.getElementById('status').innerText = parts[10] === '1' ? 'LUNAS' : (parts[10] === '0' ? 'BELUM LUNAS' : parts[10]);
     }
 </script>
+
 
 </body>
 </html>
