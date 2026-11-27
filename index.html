@@ -4912,7 +4912,6 @@ function printCashbookPDF() {
             doc.splitTextToSize(tx.packageName || '', usable).forEach(l => { doc.text(l, margin, y); y += lineH; });
             if (tx.note) { doc.splitTextToSize('Cat: ' + tx.note, usable).forEach(l => { doc.text(l, margin, y); y += lineH; }); }
             row('Total Tagihan', formatRupiah(tx.billTotal));
-			row('***Sudah Termasuk Pajak));
             doc.setFont('courier', 'bold'); row('DIBAYAR (' + tx.method + ')', formatRupiah(tx.amountPaid)); doc.setFont('courier', 'normal');
             row('Sisa Tagihan', formatRupiah(tx.remainingAfter));
             center(sep, false);
