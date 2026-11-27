@@ -4697,33 +4697,32 @@ function printCashbookPDF() {
 
         // ==================== 6. CETAK STRUK THERMAL & PRINTER BIASA ====================
         function openReceiptModal(txId) {
-            currentReceiptTxId = txId;
-            setReceiptWidth(currentReceiptWidth);
-            openModal('modal-receipt');
-        }
+    currentReceiptTxId = txId;
+    setReceiptWidth(currentReceiptWidth);
+    openModal('modal-receipt');
+}
 
-        function setReceiptWidth(width) {
-            currentReceiptWidth = width;
-            const btn58 = document.getElementById('btn-width-58');
-            const btn80 = document.getElementById('btn-width-80');
-            const btnReg = document.getElementById('btn-width-regular');
+function setReceiptWidth(width) {
+    currentReceiptWidth = width;
+    const btn58 = document.getElementById('btn-width-58');
+    const btn80 = document.getElementById('btn-width-80');
+    const btnReg = document.getElementById('btn-width-regular');
 
-            const activeCls = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white transition';
-            const inactiveCls = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-white text-slate-700 border border-slate-300 transition';
+    const activeCls = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white transition';
+    const inactiveCls = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-white text-slate-700 border border-slate-300 transition';
 
-            btn58.className = width === '58mm' ? activeCls : inactiveCls;
-            btn80.className = width === '80mm' ? activeCls : inactiveCls;
-            if (btnReg) btnReg.className = width === 'regular' ? activeCls : inactiveCls;
+    if (btn58) btn58.className = width === '58mm' ? activeCls : inactiveCls;
+    if (btn80) btn80.className = width === '80mm' ? activeCls : inactiveCls;
+    if (btnReg) btnReg.className = width === 'regular' ? activeCls : inactiveCls;
 
-            renderReceiptHTML();
-        }
-        function renderReceiptHTML() {
+    renderReceiptHTML();
+}
+
+function renderReceiptHTML() {
     const tx = db.transactions.find(t => t.id === currentReceiptTxId);
     if (!tx) return;
 
     const periodeText = tx.multiPeriodLabel || formatPeriodIndo(tx.period);
-
-    // Ambil harga paket per bulan (sama seperti logika struk WhatsApp & PDF)
     const cust = (db.customers || []).find(c => c.id === tx.customerId || c.name === tx.customerName);
     const pkg = (db.packages || []).find(p => p.id === tx.packageId || p.name === tx.packageName);
     const rawHarga = tx.packagePrice || tx.price || (pkg && pkg.price) || (cust && cust.price) || tx.amountPaid;
@@ -4831,89 +4830,121 @@ function printCashbookPDF() {
                 (tx.note ? '<p class="italic text-slate-600">Cat: ' + tx.note + '</p>' : '') +
                 '<div class="flex justify-between pt-1"><span>Harga Paket</span><span>' + hargaPaket + '</span></div>' +
                 '<div class="flex justify-between"><span>Catatan</span><span>*Sudah Termasuk Pajak*</span></div>' +
-                '<div class="flex justify-between"><span>Total Tagihan</span><span>' + formatRupiah(tx.billTotal) + '</span></div>' +
-                '<div class="flex justify-between font-bold text-[11px] pt-1"><span>DIBAYAR (' + tx.method + ')</span><span>' + formatRupiah(tx.amountPaid) + '</span></div>' +
-                '<div class="flex justify-between"><span>Sisa Tagihan</span><span>' + formatRupiah(tx.remainingAfter) + '</span></div>' +
-            '</div>' +
-            '<div class="text-center border-b border-dashed border-slate-400 pb-2 mb-2">' +
-                '<p class="font-bold text-xs">STATUS: ' + tx.statusAfter + '</p>' +
-            '</div>' +
-            '<div class="text-center text-[10px] space-y-1">' +
-                '<p>' + (db.settings.footerNote || 'Terima kasih atas pembayarannya.') + '</p>' +
-                    '</div>' +
-                '</div>';
-
-            document.getElementById('receipt-preview-wrapper').innerHTML = html;
-        }
-
-        function buildReceiptTextPDFBlob(tx) {
-    const JSPDF = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : null;
-    if (!JSPDF) return null;
-    const isRegular = currentReceiptWidth === 'regular';
-    const pageW = isRegular ? 210 : (currentReceiptWidth === '58mm' ? 58 : 80);
-    const margin = isRegular ? 15 : 3;
-    const usable = pageW - margin * 2;
-    const doc = new JSPDF({ unit: 'mm', format: isRegular ? 'a4' : [pageW, 300], orientation: 'portrait' });
-    const periodeText = tx.multiPeriodLabel || formatPeriodIndo(tx.period);
-    let y = isRegular ? 15 : 5;
-    const lineH = isRegular ? 6 : 4.2;
-    const center = (txt, bold) => { doc.setFont('courier', bold ? 'bold' : 'normal'); doc.text(txt, pageW / 2, y, { align: 'center' }); y += lineH; };
-    const row = (label, value) => { doc.setFont('courier', 'normal'); doc.text(label, margin, y); doc.text(String(value), pageW - margin, y, { align: 'right' }); y += lineH; };
-    const wrapCenter = (txt) => { doc.setFont('courier', 'normal'); const lines = doc.splitTextToSize(txt || '', usable); lines.forEach(l => { doc.text(l, pageW / 2, y, { align: 'center' }); y += lineH; }); };
-    const sep = isRegular ? '-'.repeat(72) : '-'.repeat(currentReceiptWidth === '58mm' ? 32 : 44);
-    
-    // Ambil harga paket per bulan (sama seperti logika struk WhatsApp)
-    const cust = (db.customers || []).find(c => c.id === tx.customerId || c.name === tx.customerName);
-    const pkg = (db.packages || []).find(p => p.id === tx.packageId || p.name === tx.packageName);
-    const rawHarga = tx.packagePrice || tx.price || (pkg && pkg.price) || (cust && cust.price) || tx.amountPaid;
-
-    doc.setFontSize(isRegular ? 14 : 11);
-    center(db.settings.bizName.toUpperCase(), true);
-    doc.setFontSize(isRegular ? 7 : 5);
-    center('Support By : PT. Loveika Host Nusantara', true);
-    doc.setFontSize(isRegular ? 8 : 6);
-    wrapCenter(db.settings.bizAddress || '');
-    center('WA/Telp: ' + (db.settings.bizPhone || '-'), false);
-    doc.setFontSize(isRegular ? 10 : 8);
-    center(isRegular ? 'KWITANSI PEMBAYARAN' : 'BUKTI PEMBAYARAN', true);
-    center(sep, false);
-    
-    row('No. Struk:', tx.receiptNo);
-    row('Tanggal:', formatDateIndo(tx.date) + ' ' + (tx.time || ''));
-    row('Pelanggan:', tx.customerName);
-    row('Alamat:', tx.customerAddress || (cust && cust.address) || '-');
-    center(sep, false);
-    
-    doc.setFont('courier', 'bold'); doc.text('Tagihan ' + periodeText, margin, y); y += lineH;
-    doc.setFont('courier', 'normal');
-    doc.splitTextToSize(tx.packageName || '', usable).forEach(l => { doc.text(l, margin, y); y += lineH; });
-    if (tx.note) { doc.splitTextToSize('Cat: ' + tx.note, usable).forEach(l => { doc.text(l, margin, y); y += lineH; }); }
-    
-    // Rincian harga paket per bulan, catatan pajak, dan total tagihan
-    row('Harga Paket', formatRupiah(rawHarga));
-    row('Catatan', '*Sudah Termasuk Pajak*');
-    row('Total Tagihan', formatRupiah(tx.billTotal));
-
-    // Baris DIBAYAR dicetak tebal
-    doc.setFont('courier', 'bold');
-    doc.text('DIBAYAR (' + tx.method + ')', margin, y);
-    doc.text(formatRupiah(tx.amountPaid), pageW - margin, y, { align: 'right' });
-    y += lineH;
-    doc.setFont('courier', 'normal');
-
-    row('Sisa Tagihan', formatRupiah(tx.remainingAfter));
-    center(sep, false);
-    
-    doc.setFontSize(isRegular ? 12 : 10);
-    center('STATUS: ' + tx.statusAfter, true);
-    doc.setFontSize(isRegular ? 10 : 8);
-    center(sep, false);
-    
-    wrapCenter(db.settings.footerNote || 'Terima kasih atas pembayarannya.');
-    y += lineH;
-    center('--- Terima kasih ---', false);
-    
-    return doc.output('blob');
+'Total Tagihan' + formatRupiah(tx.billTotal) + '' +
+'DIBAYAR (' + tx.method + ')' + formatRupiah(tx.amountPaid) + '' +
+'Sisa Tagihan' + formatRupiah(tx.remainingAfter) + '' +
+'' +
+'' +
+'STATUS: ' + tx.statusAfter + '' +
+'' +
+'' +
+'' + (db.settings.footerNote || 'Terima kasih atas pembayarannya.') + '' +
+'--- Terima kasih ---' +
+'' +
+'';
+document.getElementById('receipt-preview-wrapper').innerHTML = html;
+}
+function triggerThermalPrint() {
+const wrapper = document.getElementById('receipt-preview-wrapper');
+const printArea = document.getElementById('print-area');
+if (!wrapper || !printArea) {
+window.print();
+return;
+}
+printArea.innerHTML = wrapper.innerHTML;
+setTimeout(() => {
+window.print();
+}, 100);
+}
+window.addEventListener('afterprint', () => {
+const printArea = document.getElementById('print-area');
+if (printArea) printArea.innerHTML = '';
+});
+async function sendReceiptWhatsAppShare() {
+const tx = db.transactions.find(t => t.id === currentReceiptTxId);
+if (!tx) return;
+const btn = document.getElementById('btn-send-wa-share');
+const oldHtml = btn ? btn.innerHTML : '';
+if (btn) { btn.disabled = true; btn.innerHTML = 'Membuat Link Pendek...'; }
+let text = await tukarLinkNotaJadiPendek(buildReceiptWhatsAppText(tx));
+if (btn) { btn.innerHTML = 'Menyiapkan PDF...'; }
+try {
+const fileName = 'Struk_' + tx.receiptNo + '.pdf';
+const blob = buildReceiptTextPDFBlob(tx);
+if (!blob) throw new Error('jsPDF tidak tersedia');
+const file = new File([blob], fileName, { type: 'application/pdf' });
+if (navigator.canShare && navigator.canShare({ files: [file] })) {
+await navigator.share({ title: 'Struk ' + tx.receiptNo, text: text, files: [file] });
+showToast('Struk (Teks + PDF) dibagikan - pilih WhatsApp lalu pilih kontak pelanggan.', 'success');
+return;
+}
+showToast('HP ini tidak mendukung Share file. Pakai tombol Langsung ke Nomor saja.', 'info');
+} catch (err) {
+if (err && err.name === 'AbortError') { showToast('Pengiriman dibatalkan.', 'info'); return; }
+showToast('Gagal share. Pakai tombol Langsung ke Nomor saja.', 'info');
+} finally {
+if (btn) {
+btn.disabled = false;
+btn.innerHTML = oldHtml;
+if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+}
+}
+function buildReceiptTextPDFBlob(tx) {
+const JSPDF = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : null;
+if (!JSPDF) return null;
+const isRegular = currentReceiptWidth === 'regular';
+const pageW = isRegular ? 210 : (currentReceiptWidth === '58mm' ? 58 : 80);
+const margin = isRegular ? 15 : 3;
+const usable = pageW - margin * 2;
+const doc = new JSPDF({ unit: 'mm', format: isRegular ? 'a4' : [pageW, 300], orientation: 'portrait' });
+const periodeText = tx.multiPeriodLabel || formatPeriodIndo(tx.period);
+let y = isRegular ? 15 : 5;
+const lineH = isRegular ? 6 : 4.2;
+const center = (txt, bold) => { doc.setFont('courier', bold ? 'bold' : 'normal'); doc.text(txt, pageW / 2, y, { align: 'center' }); y += lineH; };
+const row = (label, value) => { doc.setFont('courier', 'normal'); doc.text(label, margin, y); doc.text(String(value), pageW - margin, y, { align: 'right' }); y += lineH; };
+const wrapCenter = (txt) => { doc.setFont('courier', 'normal'); const lines = doc.splitTextToSize(txt || '', usable); lines.forEach(l => { doc.text(l, pageW / 2, y, { align: 'center' }); y += lineH; }); };
+const sep = isRegular ? '-'.repeat(72) : '-'.repeat(currentReceiptWidth === '58mm' ? 32 : 44);
+const cust = (db.customers || []).find(c => c.id === tx.customerId || c.name === tx.customerName);
+const pkg = (db.packages || []).find(p => p.id === tx.packageId || p.name === tx.packageName);
+const rawHarga = tx.packagePrice || tx.price || (pkg && pkg.price) || (cust && cust.price) || tx.amountPaid;
+doc.setFontSize(isRegular ? 14 : 11);
+center(db.settings.bizName.toUpperCase(), true);
+doc.setFontSize(isRegular ? 7 : 5);
+center('Support By : PT. Loveika Host Nusantara', true);
+doc.setFontSize(isRegular ? 8 : 6);
+wrapCenter(db.settings.bizAddress || '');
+center('WA/Telp: ' + (db.settings.bizPhone || '-'), false);
+doc.setFontSize(isRegular ? 10 : 8);
+center(isRegular ? 'KWITANSI PEMBAYARAN' : 'BUKTI PEMBAYARAN', true);
+center(sep, false);
+row('No. Struk:', tx.receiptNo);
+row('Tanggal:', formatDateIndo(tx.date) + ' ' + (tx.time || ''));
+row('Pelanggan:', tx.customerName);
+row('Alamat:', tx.customerAddress || (cust && cust.address) || '-');
+center(sep, false);
+doc.setFont('courier', 'bold'); doc.text('Tagihan ' + periodeText, margin, y); y += lineH;
+doc.setFont('courier', 'normal');
+doc.splitTextToSize(tx.packageName || '', usable).forEach(l => { doc.text(l, margin, y); y += lineH; });
+if (tx.note) { doc.splitTextToSize('Cat: ' + tx.note, usable).forEach(l => { doc.text(l, margin, y); y += lineH; }); }
+row('Harga Paket', formatRupiah(rawHarga));
+row('Catatan', 'Sudah Termasuk Pajak');
+row('Total Tagihan', formatRupiah(tx.billTotal));
+doc.setFont('courier', 'bold');
+doc.text('DIBAYAR (' + tx.method + ')', margin, y);
+doc.text(formatRupiah(tx.amountPaid), pageW - margin, y, { align: 'right' });
+y += lineH;
+doc.setFont('courier', 'normal');
+row('Sisa Tagihan', formatRupiah(tx.remainingAfter));
+center(sep, false);
+doc.setFontSize(isRegular ? 12 : 10);
+center('STATUS: ' + tx.statusAfter, true);
+doc.setFontSize(isRegular ? 10 : 8);
+center(sep, false);
+wrapCenter(db.settings.footerNote || 'Terima kasih atas pembayarannya.');
+y += lineH;
+center('--- Terima kasih ---', false);
+return doc.output('blob');
 }
 
 function downloadReceiptPDF() {
