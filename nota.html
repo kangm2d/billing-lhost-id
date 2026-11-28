@@ -62,11 +62,17 @@
     <button class="btn-print" onclick="window.print()">Cetak / Simpan PDF</button>
     <button class="btn-print btn-wa" id="btnWA" onclick="kirimWA()">Kirim via WhatsApp</button>
     <button class="btn-print btn-copy" id="btnCopy" onclick="salinLinkPendek()">Salin Link</button>
+    <button class="btn-print" style="background:#ff9800" onclick="testSemua()">🔍 Test Kenapa Gagal (Debug)</button>
+    <div id="debugOut" style="display:none;margin-top:10px;background:#fff3cd;border:1px solid #ff9800;border-radius:5px;padding:10px;font-size:12px;word-break:break-all"></div>
+    <button class="btn-print" style="background:#6c5ce7" onclick="salinLinkKompres()">Salin Link Versi Kompres (Tanpa API)</button>
     <div class="short-box" id="shortBox">Link Pendek Nota:<br><b id="shortLink">-</b><br><span id="shortNote" style="color:#666"></span></div>
 </div>
 <script>
     const p = new URLSearchParams(window.location.search);
-    const q = p.get('q');
+    let q = p.get('q');
+    if(!q && p.get('d')){
+        try{ q = decodeURIComponent(escape(atob(p.get('d').replace(/-/g,'+').replace(/_/g,'/')))); }catch(e){}
+    }
     const dariRibu = (val) => { if (!val) return 'Rp 0'; const angka = val.startsWith('n') ? Number(val.slice(1)) : Number(val) * 1000; return 'Rp ' + (angka || 0).toLocaleString('id-ID'); };
     const formatTgl = (str) => { if (!str || str.includes('/')) return str || '-'; if (str.length >= 8) { const tgl = `${str.slice(0,2)}/${str.slice(2,4)}/${str.slice(4,8)}`; const jam = str.length >= 12 ? ` ${str.slice(8,10)}:${str.slice(10,12)}` : ''; return tgl + jam; } return str; };
     let dataNota = { nama:'-', alamat:'-', noStruk:'-', tanggal:'-', periode:'-', paket:'-', harga:'-', total:'-', sisa:'-', status:'-' };
@@ -84,6 +90,56 @@
     if (parts[9]) { document.getElementById('sisa').innerText = dariRibu(parts[9]); dataNota.sisa = dariRibu(parts[9]); }
     if (parts[10]) { const v = parts[10] === '1' ? 'LUNAS' : (parts[10] === '0' ? 'BELUM LUNAS' : parts[10]); document.getElementById('status').innerText = v; dataNota.status = v; }
 }
+
+    // === DEBUG PANEL ===
+    async function testSemua(){
+        const out = document.getElementById('debugOut');
+        out.style.display='block';
+        out.innerHTML = 'Testing...<br>URL: '+window.location.href+'<br><br>';
+        const enc = encodeURIComponent(window.location.href);
+        const tests = [
+            ['CleanURI POST', async ()=>{
+                const r = await fetch('https://cleanuri.com/api/v1/shorten',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'url='+enc});
+                const j = await r.json(); return j.result_url || JSON.stringify(j);
+            }],
+            ['is.gd via allorigins', async ()=>{
+                const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent('https://is.gd/create.php?format=simple&url='+enc)}`);
+                return await r.text();
+            }],
+            ['tinyurl via allorigins', async ()=>{
+                const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent('https://tinyurl.com/api-create.php?url='+enc)}`);
+                return await r.text();
+            }],
+            ['is.gd via corsproxy.io', async ()=>{
+                const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent('https://is.gd/create.php?format=simple&url='+enc)}`);
+                return await r.text();
+            }],
+            ['is.gd via codetabs', async ()=>{
+                const r = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent('https://is.gd/create.php?format=simple&url='+enc)}`);
+                return await r.text();
+            }],
+            ['shrtco', async ()=>{
+                const r = await fetch(`https://api.shrtco.de/v2/shorten?url=${enc}`);
+                const j = await r.json(); return j?.result?.full_short_link || JSON.stringify(j);
+            }],
+        ];
+        for(const [nama, fn] of tests){
+            try{ const hasil = await fn(); out.innerHTML += `<b>${nama}:</b> ✅ ${hasil}<br><br>`; }
+            catch(e){ out.innerHTML += `<b>${nama}:</b> ❌ ${e.message}<br><br>`; }
+        }
+        out.innerHTML += 'Kalau semua ❌, berarti jaringan / browser kamu block fetch luar. Pakai SOLUSI TANPA API di bawah.';
+    }
+    // === SOLUSI TANPA API: Link pendek versi kompresi lokal ===
+    // Link asli panjang karena q=... berisi semua teks. Kita kompres pakai base64url + ganti nama param jadi 'd'
+    function buatLinkKompres(){
+        const q = p.get('q') || '';
+        // encode ke base64url, jauh lebih pendek dari teks asli + %20 dll
+        const b64 = btoa(unescape(encodeURIComponent(q))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+        const base = window.location.origin + window.location.pathname;
+        return base + '?d=' + b64;
+    }
+
+    async function salinLinkKompres(){ const link=buatLinkKompres(); try{ await navigator.clipboard.writeText(link); alert('Tersalin! Panjang: '+link.length+' karakter (asli: '+window.location.href.length+')\n'+link); }catch(e){ prompt('Salin link kompres:',link); } }
     // === AUTO PERPENDEK FIX - LEWAT PROXY BIAR TIDAK KE-BLOCK CORS ===
     let cachePendek = null;
     let sedangProses = false;
