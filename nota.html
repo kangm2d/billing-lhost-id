@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nota Elektronik - LHOST.WIFI.ID</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px 12px;
+            display: flex;
+            justify-content: center;
+            color: #111;
+        }
+        .struk {
+            background: #ffffff;
+            padding: 24px 20px;
+            width: 100%;
+            max-width: 430px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-radius: 6px;
+            font-size: 13.5px;
+            line-height: 1.45;
+        }
+        .header-title { font-weight: bold; font-size: 15px; letter-spacing: 0.4px; margin-bottom: 6px; }
+        .link-preview {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            color: #0066cc;
+            word-break: break-all;
+            margin-bottom: 14px;
+        }
+        .bold { font-weight: bold; }
+        .mono-nota {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12.5px;
+            line-height: 1.48;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin: 10px 0;
+        }
+        .btn-print {
+            margin-top: 10px; width: 100%; padding: 11px; background: #0066cc; color: #ffffff;
+            border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold;
+        }
+        .btn-wa { background: #25D366; }
+        .btn-copy { background: #111; }
+        .btn-print:disabled { opacity: .6; cursor: wait; }
+        .short-box {
+            margin-top: 12px; background:#f6f8fa; border:1px dashed #999;
+            border-radius:5px; padding:10px; font-size:12.5px; word-break:break-all; display:none;
+        }
+        #shortLink { color:#0066cc; }
+        @media print {
+            body { background: #ffffff; padding: 0; }
+            .struk { box-shadow: none; max-width: 100%; padding: 10px; }
+            .btn-print, .short-box { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+<div class="struk">
+    <div class="header-title">NOTA ELEKTRONIK</div>
+    <div class="link-preview" id="topLink">-</div>
+
+    <div>Yth. Bapak / Ibu :</div>
+    <div class="bold" id="nama" style="font-size: 14.5px; margin-top: 2px;">-</div>
+    <div id="alamat">-</div>
+
+    <div class="mono-nota" id="notaBody">-</div>
+
+    <button class="btn-print" onclick="window.print()">Cetak / Simpan PDF</button>
+    <button class="btn-print btn-wa" id="btnWA" onclick="kirimWA()">Kirim via WhatsApp (Link Pendek)</button>
+    <button class="btn-print btn-copy" id="btnCopy" onclick="salinLinkPendek()">Salin Link Pendek</button>
+    <div class="short-box" id="shortBox">
+        Link Pendek Nota:<br><b id="shortLink">-</b><br>
+        <span id="shortNote" style="color:#666"></span>
+    </div>
+</div>
+
+<script>
+    const p = new URLSearchParams(window.location.search);
+    const rawQ = p.get('q');
+    const q = rawQ ? rawQ.replace(/\+/g, ' ') : null;
+
+    const dariRibu = (val) => {
+        if (!val) return 'Rp 0';
+        const angka = val.startsWith('n') ? Number(val.slice(1)) : Number(val) * 1000;
+        return 'Rp ' + (angka || 0).toLocaleString('id-ID');
+    };
+
+    const formatTgl = (str) => {
+        if (!str || str.includes('/')) return str || '-';
+        if (str.length >= 8) {
+            const tgl = `${str.slice(0,2)}/${str.slice(2,4)}/${str.slice(4,8)}`;
+            const jam = str.length >= 12 ? ` ${str.slice(8,10)}:${str.slice(10,12)}` : '';
+            return tgl + jam;
+        }
+        return str;
+    };
+
+    let dataNota = {
+        nama: '-',
+        alamat: '-',
+        noStruk: '-',
+        tanggal: '-',
+        periode: '-',
+        paket: '-',
+        harga: 'Rp 0',
+        catatan: 'Sudah Termasuk Pajak*',
+        total: 'Rp 0',
+        sisa: 'Rp 0',
+        status: '-',
+        admin: 'LHOST.WIFI.ID',
+        footer: 'Terima kasih atas pembayaran tepat waktu. Simpan struk ini sebagai bukti sah.',
+        support: 'PT. Loveika Host Nusantara'
+    };
+
+    if (q) {
+        const parts = q.split('~');
+        if (parts[0]) dataNota.nama = parts[0];
+        if (parts[1]) dataNota.alamat = parts[1];
+        if (parts[2]) dataNota.noStruk = parts[2].startsWith('INV-') ? parts[2] : 'INV-' + parts[2];
+        if (parts[3]) dataNota.tanggal = formatTgl(parts[3]);
+        if (parts[4]) dataNota.periode = parts[4];
+        if (parts[5]) dataNota.paket = /^(paket|internet)/i.test(parts[5]) ? parts[5] : 'Paket ' + parts[5];
+        if (parts[6]) dataNota.harga = dariRibu(parts[6]);
+        const metode = parts[8] === 'T' ? 'Tunai' : (parts[8] === 'B' ? 'Transfer' : (parts[8] || ''));
+        if (parts[7]) dataNota.total = dariRibu(parts[7]) + (metode ? ' (' + metode + ')' : '');
+        if (parts[9]) dataNota.sisa = dariRibu(parts[9]);
+        if (parts[10]) dataNota.status = parts[10] === '1' ? 'LUNAS' : (parts[10] === '0' ? 'BELUM LUNAS' : parts[10]);
+    }
+
+    document.getElementById('topLink').innerText = window.location.href;
+    document.getElementById('nama').innerText = dataNota.nama;
+    document.getElementById('alamat').innerText = dataNota.alamat;
+
+    function susunBlokNota(linkAktif, pakaiFormatWA = false) {
+        const namaFmt = pakaiFormatWA ? `*${dataNota.nama}*` : dataNota.nama;
+        const blokRincian = [
+            '-----------------------------',
+            'Bukti Pembayaran Internet WiFi',
+            '-----------------------------',
+            `No. Struk   : ${dataNota.noStruk}`,
+            `Tanggal     : ${dataNota.tanggal}`,
+            `Periode     : ${dataNota.periode}`,
+            `Jenis Paket : ${dataNota.paket}`,
+            `Harga Paket : ${dataNota.harga}`,
+            `Catatan     : ${dataNota.catatan}`,
+            `Total Bayar : ${dataNota.total}`,
+            `Sisa        : ${dataNota.sisa}`,
+            `Status      : ${dataNota.status}`,
+            '-----------------------------',
+            `Admin By: ${dataNota.admin}`,
+            '-----------------------------'
+        ].join('\n');
+
+        const rincianFinal = pakaiFormatWA ? `\`\`\`\n${blokRincian}\n\`\`\`` : blokRincian;
+
+        return [
+            'NOTA ELEKTRONIK',
+            linkAktif,
+            '',
+            'Yth. Bapak / Ibu :',
+            namaFmt,
+            dataNota.alamat,
+            '',
+            rincianFinal,
+            '',
+            'Struk/Link PDF terlampir di pesan ini.',
+            dataNota.footer,
+            '-----------------------------',
+            `Support By : ${dataNota.support}`
+        ].join('\n');
+    }
+
+    function renderTampilanNota(linkAktif) {
+        document.getElementById('topLink').innerText = linkAktif;
+        const fullText = susunBlokNota(linkAktif, false);
+        const potonganBawah = fullText.split('\n-----------------------------\nBukti Pembayaran Internet WiFi\n');
+        document.getElementById('notaBody').innerText =
+            '-----------------------------\nBukti Pembayaran Internet WiFi\n' + (potonganBawah[1] || '');
+    }
+
+    renderTampilanNota(window.location.href);
+
+    let cachePendek = null;
+    let sedangProses = false;
+
+    async function fetchDenganTimeout(url, ms = 2500) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), ms);
+        try {
+            return await fetch(url, { signal: ctrl.signal });
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
+    async function perpendekLink(linkPanjang) {
+        if (cachePendek) return cachePendek;
+        if (sedangProses) return linkPanjang;
+        sedangProses = true;
+
+        const providers = [
+            `https://is.gd/create.php?format=simple&url=${encodeURIComponent(linkPanjang)}`,
+            `https://tinyurl.com/api-create.php?url=${encodeURIComponent(linkPanjang)}`
+        ];
+
+        for (const api of providers) {
+            try {
+                const res = await fetchDenganTimeout(api, 2500);
+                const txt = (await res.text()).trim();
+                if (txt.startsWith('http') && txt.length < linkPanjang.length) {
+                    cachePendek = txt;
+                    sedangProses = false;
+                    tampilkanPendek(txt);
+                    renderTampilanNota(txt);
+                    return txt;
+                }
+            } catch (e) {}
+        }
+
+        sedangProses = false;
+        return linkPanjang;
+    }
+
+    function tampilkanPendek(link) {
+        const box = document.getElementById('shortBox');
+        const el = document.getElementById('shortLink');
+        box.style.display = 'block';
+        el.innerText = link;
+        document.getElementById('shortNote').innerText =
+            link === window.location.href
+                ? 'Shortener gagal, memakai link asli.'
+                : 'Otomatis diperpendek, isi nota tetap sama.';
+    }
+
+    window.addEventListener('load', () => {
+        perpendekLink(window.location.href);
+    });
+
+    async function kirimWA() {
+        const btn = document.getElementById('btnWA');
+        const teksAwal = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = 'Menyiapkan Link Pendek...';
+
+        const linkPendek = await perpendekLink(window.location.href);
+        const pesan = susunBlokNota(linkPendek, true);
+
+        btn.disabled = false;
+        btn.innerText = teksAwal;
+        window.open(`https://wa.me/?text=${encodeURIComponent(pesan)}`, '_blank');
+    }
+
+    async function salinLinkPendek() {
+        const btn = document.getElementById('btnCopy');
+        const teksAwal = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = 'Menyiapkan Link Pendek...';
+
+        const linkPendek = await perpendekLink(window.location.href);
+        try {
+            await navigator.clipboard.writeText(linkPendek);
+            btn.innerText = 'Tersalin! ✅';
+        } catch (e) {
+            prompt('Salin link pendek ini:', linkPendek);
+            btn.innerText = teksAwal;
+        }
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerText = teksAwal;
+        }, 2000);
+    }
+</script>
+</body>
+</html>
