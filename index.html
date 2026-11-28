@@ -5063,24 +5063,25 @@ function buildReceiptWhatsAppText(tx) {
         '-----------------------------\n' +
         'Support By : PT. Loveika Host Nusantara';
 }
-        const WORKER_URL_KASIR = 'https://nota-lhost.kangm2d.workers.dev';
+        // PASTIKAN cuma ada 1x di file, kalau sudah ada di atas, hapus yang ini
+// const WORKER_URL_KASIR = 'https://nota-lhost.kangm2d.workers.dev';
 
 async function tukarLinkNotaJadiPendek(text){
-  // Cari link panjang nota di dalam teks, apapun bentuknya
-  // Ini bisa nemu https://kangm2d.github.io/.../nota?q=... dan juga .../nota.html?q=...
-  const match = text.match(/https:\/\/[^\s]+/);
-  if(!match) return text;
-  const linkPanjang = match[0].replace(/[)\]]+$/, '');
-
   try{
-    const r = await fetch(WORKER_URL_KASIR + '/?url=' + encodeURIComponent(linkPanjang));
+    if(!text) return text;
+    const match = text.match(/https:\/\/[^\s]+/);
+    if(!match) return text;
+    const linkPanjang = match[0].replace(/[)\]]+$/, '');
+    // Kalau link-nya sudah pendek, jangan diapa-apain
+    if(linkPanjang.length < 60) return text;
+
+    const r = await fetch('https://nota-lhost.kangm2d.workers.dev/?url=' + encodeURIComponent(linkPanjang));
     const pendek = (await r.text()).trim();
-    // Kalau Worker jawab v.gd / is.gd / tinyurl, pakai itu
     if(pendek.startsWith('http') && pendek.length < 60 && !pendek.includes('github.io')){
       return text.replace(linkPanjang, pendek);
     }
   }catch(e){
-    console.log('Worker kasir gagal', e.message);
+    console.log('Shorten gagal, pakai link asli', e);
   }
   return text;
 }
