@@ -144,7 +144,7 @@
     async function salinLinkKompres(){ const link=buatLinkKompres(); try{ await navigator.clipboard.writeText(link); alert('Tersalin! Panjang: '+link.length+' karakter (asli: '+window.location.href.length+')\n'+link); }catch(e){ prompt('Salin link kompres:',link); } }
     // === AUTO PERPENDEK VIA CLOUDFLARE WORKER (ANTI-BLOCK) ===
     // GANTI URL INI dengan Worker kamu setelah deploy (lihat cara di bawah)
-    const WORKER_URL = 'https://nota-shortener.kangm2d.workers.dev';
+    const WORKER_URL = 'https://nota-lhost.kangm2d.workers.dev';
     let cachePendek = null;
     let janjiPendek = null;
     async function fetchTimeout(url, ms=5000, opts={}){
