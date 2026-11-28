@@ -5063,43 +5063,27 @@ function buildReceiptWhatsAppText(tx) {
         '-----------------------------\n' +
         'Support By : PT. Loveika Host Nusantara';
 }
-        async function sendReceiptWhatsAppCombined() {
-            const tx = db.transactions.find(t => t.id === currentReceiptTxId);
-            if (!tx) return;
-            const cust = db.customers.find(c => c.id === tx.customerId);
-            const phone = cust ? formatPhoneForWA(cust.phone) : '';
-            const btn = document.getElementById('btn-send-wa-combined');
-            const oldBtnHtml = btn ? btn.innerHTML : '';
-            if (btn) { btn.disabled = true; btn.innerHTML = 'Membuat Link Pendek...'; }
-            let text = await tukarLinkNotaJadiPendek(buildReceiptWhatsAppText(tx));
-            if (btn) { btn.innerHTML = 'Menyiapkan PDF...'; }
-            try {
-                const fileName = 'Struk_' + tx.receiptNo + '.pdf';
-                // PDF TEKS (bukan gambar) - teks bisa di-copy di WA
-                const blob = buildReceiptTextPDFBlob(tx);
-                if (!blob) throw new Error('jsPDF tidak tersedia');
-                const file = new File([blob], fileName, { type: 'application/pdf' });
-                // FIX: JANGAN pakai navigator.share / Share Sheet - itu yang bikin WA minta cari nomor lagi,
-                // karena Share Sheet tidak membawa nomor tujuan. Selalu pakai wa.me/nomor biar langsung ke chat pelanggan.
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = fileName; a.click();
-                setTimeout(() => URL.revokeObjectURL(url), 5000);
-                const waUrl = phone ? 'https://wa.me/' + phone + '?text=' + encodeURIComponent(text) : 'https://wa.me/?text=' + encodeURIComponent(text);
-                window.open(waUrl, '_blank');
-                showToast('PDF diunduh. WA terbuka langsung ke chat pelanggan - tinggal lampirkan (attach) PDF-nya.', 'success');
-            } catch (err) {
-                // User batal share / share gagal -> fallback ke cara lama
-                if (err && err.name === 'AbortError') { showToast('Pengiriman dibatalkan.', 'info'); return; }
-                downloadReceiptPDF();
-                setTimeout(() => {
-                    const waUrl = phone ? 'https://wa.me/' + phone + '?text=' + encodeURIComponent(text) : 'https://wa.me/?text=' + encodeURIComponent(text);
-                    window.open(waUrl, '_blank');
-                }, 1200);
-            } finally {
-                if (btn) { btn.disabled = false; btn.innerHTML = oldBtnHtml; lucide.createIcons(); }
-            }
-        }
+        const WORKER_URL_KASIR = 'https://nota-lhost.kangm2d.workers.dev';
 
+async function tukarLinkNotaJadiPendek(text){
+  // Cari link panjang nota di dalam teks, apapun bentuknya
+  // Ini bisa nemu https://kangm2d.github.io/.../nota?q=... dan juga .../nota.html?q=...
+  const match = text.match(/https:\/\/[^\s]+/);
+  if(!match) return text;
+  const linkPanjang = match[0].replace(/[)\]]+$/, '');
+
+  try{
+    const r = await fetch(WORKER_URL_KASIR + '/?url=' + encodeURIComponent(linkPanjang));
+    const pendek = (await r.text()).trim();
+    // Kalau Worker jawab v.gd / is.gd / tinyurl, pakai itu
+    if(pendek.startsWith('http') && pendek.length < 60 && !pendek.includes('github.io')){
+      return text.replace(linkPanjang, pendek);
+    }
+  }catch(e){
+    console.log('Worker kasir gagal', e.message);
+  }
+  return text;
+}
         // ==================== 7. LAPORAN & TUNGGAKAN ====================
         function renderReports() {
             const monthVal = document.getElementById('report-month-input').value || getCurrentYearMonth();
